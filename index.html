@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KMAMA POST Generator</title>
-<meta name="description" content="마미톡 게시글을 일본어로 번역하여 X 포스팅용 카드를 자동 생성합니다">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
@@ -21,7 +20,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .step-header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
 .step-num{width:28px;height:28px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:12px;color:var(--text2);flex-shrink:0}
 .step.active .step-num{background:var(--accent);border-color:var(--accent);color:#000}
-.step-title{font-size:14px;font-weight:500;color:var(--text)}
+.step-title{font-size:14px;font-weight:500}
 .step-sub{font-size:12px;color:var(--text2);margin-left:auto}
 .field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
 .field label{font-size:11px;color:var(--text2);letter-spacing:.5px;text-transform:uppercase}
@@ -45,16 +44,16 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .prog-step.done{background:var(--accent)}
 .prog-step.active{background:var(--accent2)}
 .preview-section{margin-top:32px}
-.preview-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.preview-header{display:flex;align-items:center;margin-bottom:16px}
 .preview-title{font-size:14px;font-weight:500}
 .cards-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:24px}
 .card-wrap{position:relative}
 .cut-label{font-family:'Space Mono',monospace;font-size:11px;color:var(--text3);margin-bottom:8px}
 .post-card{background:#fff;border-radius:16px;padding:20px;min-height:480px;display:flex;flex-direction:column;color:#111;font-family:'Noto Sans KR',sans-serif}
 .post-card.jp{font-family:'Noto Sans JP',sans-serif}
-.card-handle{font-size:11px;font-weight:700;text-align:center;color:#555;margin-bottom:14px;letter-spacing:.5px}
+.card-handle{font-size:11px;font-weight:700;text-align:center;color:#555;margin-bottom:14px}
 .card-ttl-bold{font-size:15px;font-weight:700;color:#111;margin-bottom:14px;line-height:1.45}
-.card-ttl-normal{font-size:14px;font-weight:400;color:#111;margin-bottom:14px;line-height:1.45}
+.card-ttl-normal{font-size:14px;color:#111;margin-bottom:14px;line-height:1.45}
 .card-meta{display:flex;align-items:center;gap:10px;padding-bottom:12px;border-bottom:1px solid #eee;margin-bottom:12px}
 .card-avatar{width:36px;height:36px;border-radius:50%;background:#e8f8f4;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
 .card-meta-name{font-size:13px;font-weight:600;color:#222}
@@ -141,18 +140,14 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <div class="prog-step" id="prog4"></div>
     </div>
     <div class="preview-header">
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:18px">🇰🇷</span>
-        <span class="preview-title">한국어 원본</span>
-      </div>
+      <span style="font-size:18px;margin-right:10px">🇰🇷</span>
+      <span class="preview-title">한국어 원본</span>
     </div>
     <div class="cards-grid" id="koPreview"></div>
     <div style="height:1px;background:var(--border);margin:28px 0"></div>
     <div class="preview-header">
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:18px">🇯🇵</span>
-        <span class="preview-title">일본어 번역본</span>
-      </div>
+      <span style="font-size:18px;margin-right:10px">🇯🇵</span>
+      <span class="preview-title">일본어 번역본</span>
     </div>
     <div class="cards-grid" id="jpPreview"></div>
     <div style="height:1px;background:var(--border);margin:28px 0"></div>
@@ -175,7 +170,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 <div id="jpCardsEl"></div>
 <script>
 const GQL='https://api.mmtalk.kr/graphql';
-let mmToken=null,geminiKey='',cardData=null;
+const PROXY='https://corsproxy.io/?url=';
+let mmToken=null,geminiKey='';
 function saveSettings(){
   geminiKey=document.getElementById('geminiKey').value.trim();
   const phone=document.getElementById('mmPhone').value.trim();
@@ -191,7 +187,7 @@ function loadSettings(){
   const p=localStorage.getItem('kmama_phone');
   if(k){document.getElementById('geminiKey').value=k;geminiKey=k}
   if(p){document.getElementById('mmPhone').value=p}
-  showStatus('settingsStatus',k?'저장된 설정을 불러왔습니다. 비밀번호를 입력 후 로그인해주세요.':'저장된 설정이 없습니다',k?'info':'error');
+  showStatus('settingsStatus',k?'저장된 설정을 불러왔습니다. 비밀번호 입력 후 로그인해주세요.':'저장된 설정이 없습니다',k?'info':'error');
 }
 async function doLogin(phone,pw){
   showStatus('settingsStatus','마미톡 로그인 중...','info',true);
@@ -199,14 +195,15 @@ async function doLogin(phone,pw){
     const r=await fetch(GQL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({operationName:'Login',query:'mutation Login($loginInput:UserLoginInput!){login(loginInput:$loginInput){accessToken status message}}',variables:{loginInput:{phoneNumber:phone,password:pw}}})});
     const data=await r.json();
     const result=data?.data?.login;
-    if(result?.accessToken){mmToken=result.accessToken;showStatus('settingsStatus','✓ 마미톡 로그인 성공! 이제 URL을 입력하세요','success');document.getElementById('step2').classList.add('active')}
-    else{showStatus('settingsStatus','✗ 로그인 실패: '+(result?.message||'계정 정보를 확인해주세요'),'error')}
-  }catch(e){showStatus('settingsStatus','✗ 네트워크 오류: '+e.message,'error')}
+    if(result?.accessToken){mmToken=result.accessToken;showStatus('settingsStatus','✓ 마미톡 로그인 성공! URL을 입력하세요','success');document.getElementById('step2').classList.add('active')}
+    else showStatus('settingsStatus','✗ 로그인 실패: '+(result?.message||'계정 정보를 확인해주세요'),'error');
+  }catch(e){showStatus('settingsStatus','✗ 오류: '+e.message,'error')}
 }
 async function runFull(){
   const url=document.getElementById('postUrl').value.trim();
   if(!url){showStatus('analyzeStatus','URL을 입력해주세요','error');return}
-  if(!geminiKey){geminiKey=document.getElementById('geminiKey').value.trim()||localStorage.getItem('kmama_gemini')||'';if(!geminiKey){showStatus('analyzeStatus','Gemini API 키를 먼저 입력해주세요','error');return}}
+  geminiKey=geminiKey||document.getElementById('geminiKey').value.trim()||localStorage.getItem('kmama_gemini')||'';
+  if(!geminiKey){showStatus('analyzeStatus','Gemini API 키를 먼저 입력해주세요','error');return}
   const articleId=extractId(url);
   if(!articleId){showStatus('analyzeStatus','올바른 마미톡 URL을 입력해주세요','error');return}
   setLoading(true,'게시글 수집 중...');setProgress(1);
@@ -218,12 +215,10 @@ async function runFull(){
     setLoading(true,'베스트 댓글 수집 중...');
     const comments=await fetchComments(articleId);
     setProgress(3);
-    setLoading(true,'Gemini AI 각색 & 번역 중...');
-    const aiResult=await callGemini(article,comments);
+    setLoading(true,'Gemini AI 번역 중...');
+    const ai=await callGemini(article,comments);
     setProgress(4);
-    cardData={article,comments,ai:aiResult};
-    setLoading(true,'카드 생성 중...');
-    renderAll(article,comments,aiResult);
+    renderAll(article,ai);
     document.getElementById('previewSection').style.display='block';
     document.getElementById('previewSection').scrollIntoView({behavior:'smooth'});
     showStatus('analyzeStatus','✓ 완료!','success');
@@ -231,11 +226,12 @@ async function runFull(){
   finally{setLoading(false)}
 }
 async function fetchArticle(id){
-  const r=await fetch('https://community.mmtalk.kr/community/article/'+id);
+  const url=PROXY+encodeURIComponent('https://community.mmtalk.kr/community/article/'+id);
+  const r=await fetch(url);
   const html=await r.text();
   const doc=new DOMParser().parseFromString(html,'text/html');
   const nd=doc.getElementById('__NEXT_DATA__');
-  if(!nd)return null;
+  if(!nd)throw new Error('게시글 데이터를 읽을 수 없습니다');
   return JSON.parse(nd.textContent)?.props?.pageProps?.article||null;
 }
 async function fetchComments(id){
@@ -243,37 +239,36 @@ async function fetchComments(id){
     const headers={'Content-Type':'application/json'};
     if(mmToken)headers['Authorization']='Bearer '+mmToken;
     const r=await fetch(GQL,{method:'POST',headers,body:JSON.stringify({query:'query GetComments($articleSeq:Float!){comments(articleSeq:$articleSeq){content likeCnt createTime}}',variables:{articleSeq:parseFloat(id)}})});
-    const data=await r.json();
-    return(data?.data?.comments||[]).sort((a,b)=>(b.likeCnt||0)-(a.likeCnt||0)).slice(0,3);
+    return((await r.json())?.data?.comments||[]).sort((a,b)=>(b.likeCnt||0)-(a.likeCnt||0)).slice(0,3);
   }catch(e){return[]}
 }
 async function callGemini(article,comments){
   const best=comments[0]?.content||'';
-  const prompt='한국 육아 커뮤니티 게시글을 일본 X(트위터)용으로 변환해주세요.\n\n제목: '+article.title+'\n조회수: '+(article.viewCount||'')+'\n본문: '+article.content+'\n베스트댓글: '+(best||'없음')+'\n\n규칙:\n- 개인 특정 요소 완전 제거\n- 은어 표준어로 교체\n- 자연스러운 일본어\n\nJSON만 응답:{"ko_title":"","ko_body1":"","ko_body2":"","ko_body3":"","ko_comment":"","jp_title":"","jp_body1":"","jp_body2":"","jp_body3":"","jp_comment":"","time_ko":"","time_jp":"","views":"","ko_tw1":"","ko_tw2":"","ko_tw3":"","jp_tw1":"","jp_tw2":"","jp_tw3":""}';
+  const prompt='한국 육아 커뮤니티 게시글을 일본 X(트위터)용으로 변환해주세요.\n제목: '+article.title+'\n조회수: '+(article.viewCount||'')+'\n본문: '+article.content+'\n베스트댓글: '+(best||'없음')+'\n\n규칙: 개인 특정 요소(이름,지역,병원명) 제거. 은어는 표준어로. 자연스러운 일본어.\n\nJSON만 응답:{"ko_title":"","ko_body1":"","ko_body2":"","ko_body3":"","ko_comment":"","jp_title":"","jp_body1":"","jp_body2":"","jp_body3":"","jp_comment":"","time_ko":"","time_jp":"","views":"'+(article.viewCount||'')+'","ko_tw1":"","ko_tw2":"","ko_tw3":"","jp_tw1":"","jp_tw2":"","jp_tw3":""}';
   const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+geminiKey,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.7,maxOutputTokens:2000}})});
   const data=await r.json();
-  if(data.error)throw new Error('Gemini API 오류: '+data.error.message);
+  if(data.error)throw new Error('Gemini 오류: '+data.error.message);
   const text=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
   return JSON.parse(text.replace(/```json|```/g,'').trim());
 }
-function renderAll(article,comments,ai){
+function renderAll(article,ai){
   const views=ai.views||article.viewCount||'';
-  document.getElementById('koPreview').innerHTML=makeCard('ko',1,ai.ko_title,ai.time_ko,views,true,ai.ko_body1,'',false)+makeCard('ko',2,ai.ko_title,'','',false,ai.ko_body2,'',false)+makeCard('ko',3,ai.ko_title,'','',false,ai.ko_body3,ai.ko_comment,true);
-  document.getElementById('jpPreview').innerHTML=makeCard('jp',1,ai.jp_title,ai.time_jp,views,true,ai.jp_body1,'',false)+makeCard('jp',2,ai.jp_title,'','',false,ai.jp_body2,'',false)+makeCard('jp',3,ai.jp_title,'','',false,ai.jp_body3,ai.jp_comment,true);
-  document.getElementById('koCardsEl').innerHTML=makeCardRaw('ko',ai.ko_title,ai.time_ko,views,true,ai.ko_body1,'',false)+makeCardRaw('ko',ai.ko_title,'','',false,ai.ko_body2,'',false)+makeCardRaw('ko',ai.ko_title,'','',false,ai.ko_body3,ai.ko_comment,true);
-  document.getElementById('jpCardsEl').innerHTML=makeCardRaw('jp',ai.jp_title,ai.time_jp,views,true,ai.jp_body1,'',false)+makeCardRaw('jp',ai.jp_title,'','',false,ai.jp_body2,'',false)+makeCardRaw('jp',ai.jp_title,'','',false,ai.jp_body3,ai.jp_comment,true);
+  document.getElementById('koPreview').innerHTML=mkCard('ko',1,ai.ko_title,ai.time_ko,views,true,ai.ko_body1,'',false)+mkCard('ko',2,ai.ko_title,'','',false,ai.ko_body2,'',false)+mkCard('ko',3,ai.ko_title,'','',false,ai.ko_body3,ai.ko_comment,true);
+  document.getElementById('jpPreview').innerHTML=mkCard('jp',1,ai.jp_title,ai.time_jp,views,true,ai.jp_body1,'',false)+mkCard('jp',2,ai.jp_title,'','',false,ai.jp_body2,'',false)+mkCard('jp',3,ai.jp_title,'','',false,ai.jp_body3,ai.jp_comment,true);
+  document.getElementById('koCardsEl').innerHTML=mkRaw('ko',ai.ko_title,ai.time_ko,views,true,ai.ko_body1,'',false)+mkRaw('ko',ai.ko_title,'','',false,ai.ko_body2,'',false)+mkRaw('ko',ai.ko_title,'','',false,ai.ko_body3,ai.ko_comment,true);
+  document.getElementById('jpCardsEl').innerHTML=mkRaw('jp',ai.jp_title,ai.time_jp,views,true,ai.jp_body1,'',false)+mkRaw('jp',ai.jp_title,'','',false,ai.jp_body2,'',false)+mkRaw('jp',ai.jp_title,'','',false,ai.jp_body3,ai.jp_comment,true);
   const styles=['공감형','충격형','질문형'];
-  document.getElementById('tweetsGrid').innerHTML='<div class="tweet-box"><div class="tweet-box-title">🇰🇷 한국어</div>'+[ai.ko_tw1,ai.ko_tw2,ai.ko_tw3].map((t,i)=>tweetHTML(t,styles[i])).join('')+'</div><div class="tweet-box"><div class="tweet-box-title">🇯🇵 일본어</div>'+[ai.jp_tw1,ai.jp_tw2,ai.jp_tw3].map((t,i)=>tweetHTML(t,styles[i])).join('')+'</div>';
+  document.getElementById('tweetsGrid').innerHTML='<div class="tweet-box"><div class="tweet-box-title">🇰🇷 한국어</div>'+[ai.ko_tw1,ai.ko_tw2,ai.ko_tw3].map((t,i)=>twH(t,styles[i])).join('')+'</div><div class="tweet-box"><div class="tweet-box-title">🇯🇵 일본어</div>'+[ai.jp_tw1,ai.jp_tw2,ai.jp_tw3].map((t,i)=>twH(t,styles[i])).join('')+'</div>';
 }
-function makeCard(lang,cut,title,time,views,showMeta,body,comment,showComment){
+function mkCard(lang,cut,title,time,views,showMeta,body,comment,showComment){
   const jp=lang==='jp';const name=jp?'韓国ママ':'한국맘';
   return '<div class="card-wrap"><div class="cut-label">Cut#'+cut+'</div><div class="post-card'+(jp?' jp':'')+'"><div class="card-handle">@kmama_real</div><div class="'+(cut===1?'card-ttl-bold':'card-ttl-normal')+'">'+esc(title)+'</div>'+(showMeta?'<div class="card-meta"><div class="card-avatar">🐻</div><div><div class="card-meta-name">'+name+'</div><div class="card-meta-sub">'+esc(time)+' •• '+esc(String(views))+'</div></div></div>':'')+'<div class="card-body">'+esc(body)+'</div>'+(showComment&&comment?'<div class="best-wrap"><div class="best-lbl">👑 베스트 댓글</div><div class="best-txt">'+esc(comment)+'</div></div>':'')+'</div></div>';
 }
-function makeCardRaw(lang,title,time,views,showMeta,body,comment,showComment){
+function mkRaw(lang,title,time,views,showMeta,body,comment,showComment){
   const jp=lang==='jp';const name=jp?'韓国ママ':'한국맘';
   return '<div style="background:#fff;border-radius:16px;padding:20px;min-height:480px;display:flex;flex-direction:column;font-family:'Noto Sans KR',sans-serif;color:#111"><div style="font-size:11px;font-weight:700;text-align:center;color:#555;margin-bottom:14px">@kmama_real</div><div style="font-size:14px;font-weight:600;color:#111;margin-bottom:12px;line-height:1.5">'+esc(title)+'</div>'+(showMeta?'<div style="display:flex;align-items:center;gap:8px;padding-bottom:12px;border-bottom:1px solid #eee;margin-bottom:12px"><div style="width:34px;height:34px;border-radius:50%;background:#e8f8f4;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🐻</div><div><div style="font-size:13px;font-weight:600;color:#222">'+name+'</div><div style="font-size:11px;color:#888">'+esc(time)+' •• '+esc(String(views))+'</div></div></div>':'')+'<div style="font-size:13px;line-height:1.85;color:#222;flex:1;white-space:pre-wrap">'+esc(body)+'</div>'+(showComment&&comment?'<div style="margin-top:12px;padding:10px 12px;background:#f0faf6;border-left:3px solid #00c896"><div style="font-size:10px;color:#00a070;font-weight:700;margin-bottom:4px">👑 베스트 댓글</div><div style="font-size:12px;color:#1a5a40;line-height:1.65">'+esc(comment)+'</div></div>':'')+'</div>';
 }
-function tweetHTML(text,style){return '<div class="tweet-item"><div class="tweet-style">'+style+'</div><div class="tweet-text">'+esc(text)+'</div><div class="tweet-copy"><button class="copy-btn" onclick="copyTweet('+JSON.stringify(text)+')">복사</button></div></div>'}
+function twH(t,style){return '<div class="tweet-item"><div class="tweet-style">'+style+'</div><div class="tweet-text">'+esc(t||'')+'</div><div class="tweet-copy"><button class="copy-btn" onclick="copyT('+JSON.stringify(t||'')+')">복사</button></div></div>'}
 async function downloadCards(lang){
   document.getElementById('dlStatus').textContent='이미지 생성 중...';
   try{
@@ -284,18 +279,14 @@ async function downloadCards(lang){
 }
 function extractId(url){
   const m=url.match(/article\/(d+)/);if(m)return m[1];
-  try{const u=new URL(url);const a=u.searchParams.get('af_android_url');if(a){const m2=a.match(/article\/(d+)/);if(m2)return m2[1]}}catch(e){}
-  return null;
+  try{const u=new URL(url);const a=u.searchParams.get('af_android_url');if(a){const m2=a.match(/article\/(d+)/);if(m2)return m2[1]}}catch(e){}return null;
 }
-function esc(str){if(!str)return'';return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function showStatus(id,msg,type,loading=false){const el=document.getElementById(id);if(!el)return;el.innerHTML='<div class="status-bar '+type+'">'+(loading?'<div class="dot"></div>':'')+msg+'</div>'}
 function setLoading(show,msg=''){document.getElementById('loadingOverlay').classList.toggle('show',show);document.getElementById('loadingMsg').textContent=msg}
-function setProgress(step){for(let i=1;i<=4;i++){const el=document.getElementById('prog'+i);if(!el)continue;el.className='prog-step'+(i<step?' done':i===step?' active':'')}}
-function copyTweet(text){navigator.clipboard.writeText(text).then(()=>{document.getElementById('dlStatus').textContent='✓ 트윗 문구 복사됨!';setTimeout(()=>document.getElementById('dlStatus').textContent='',2000)})}
-window.onload=()=>{
-  const s=localStorage.getItem('kmama_gemini');if(s){document.getElementById('geminiKey').value=s;geminiKey=s}
-  const p=localStorage.getItem('kmama_phone');if(p)document.getElementById('mmPhone').value=p;
-};
+function setProgress(step){for(let i=1;i<=4;i++){const el=document.getElementById('prog'+i);if(el)el.className='prog-step'+(i<step?' done':i===step?' active':'')}}
+function copyT(t){navigator.clipboard.writeText(t).then(()=>{document.getElementById('dlStatus').textContent='✓ 복사됨!';setTimeout(()=>document.getElementById('dlStatus').textContent='',2000)})}
+window.onload=()=>{const k=localStorage.getItem('kmama_gemini');if(k){document.getElementById('geminiKey').value=k;geminiKey=k}const p=localStorage.getItem('kmama_phone');if(p)document.getElementById('mmPhone').value=p};
 </script>
 </body>
 </html>
