@@ -426,21 +426,20 @@ function renderAll(article, ai) {
 function mkCard(lang, title, time, views, showMeta, body, comment, label) {
   var jp = lang === 'jp';
   var name = jp ? '韓国ママ' : '한국엄마';
-  var html = '<div class="card-wrap"><div class="cut-label">' + (label||'') + '</div><div class="post-card' + (jp ? ' jp' : '') + '">';
-  html += '<div class="card-handle">@kmama_real</div>';
-  html += '<div class="card-ttl-bold">' + esc(title) + '</div>';
+  var viewsStr = jp ? String(views).replace('회', '回') : String(views);
+  var h = '<div class="card-wrap"><div class="cut-label">'+(label||'')+'</div><div class="post-card'+(jp?' jp':'')+'">';
+  h += '<div class="card-handle">@kmama_real</div>';
+  if (title) h += '<div class="card-ttl-bold">'+esc(title)+'</div>';
   if (showMeta) {
-    html += '<div class="card-meta"><div class="card-avatar">👶</div><div>';
-    html += '<div class="card-meta-name">' + name + '</div>';
-    html += '<div class="card-meta-sub">' + esc(time) + ' · ' + esc(String(views)) + '</div>';
-    html += '</div></div>';
+    h += '<div class="card-meta"><div class="card-avatar">👶</div><div>';
+    h += '<div class="card-meta-name">'+name+'</div>';
+    h += '<div class="card-meta-sub">'+esc(time)+' · '+esc(viewsStr)+'</div>';
+    h += '</div></div>';
   }
-  html += '<div class="card-body">' + esc(body) + '</div>';
-  if (comment) {
-    html += '<div class="best-wrap"><div class="best-lbl">💬 베스트 댓글</div><div class="best-txt">' + esc(comment) + '</div></div>';
-  }
-  html += '</div></div>';
-  return html;
+  h += '<div class="card-body">'+esc(body)+'</div>';
+  if (comment) h += '<div class="best-wrap"><div class="best-lbl">💬 베스트 댓글</div><div class="best-txt">'+esc(comment)+'</div></div>';
+  h += '</div></div>';
+  return h;
 }
 function mkRaw(lang, title, time, views, showMeta, body, comment, showComment) {
   var jp = lang === 'jp';
