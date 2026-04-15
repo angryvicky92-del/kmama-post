@@ -449,9 +449,10 @@ function renderAll(article, ai) {
   document.getElementById('koCardsEl').innerHTML = '';
 
   var styles=['공감형','충격형','질문형'];
+  var twKeys=['ko_tw1','ko_tw2','ko_tw3'];
   document.getElementById('tweetsGrid').innerHTML =
-    '<div class="tweet-box"><div class="tweet-box-title">🇰🇷 한국어</div>'+[ai.ko_tw1,ai.ko_tw2,ai.ko_tw3].map(function(t,i){return twH(t,styles[i]);}).join('')+'</div>'+
-    '<div class="tweet-box"><div class="tweet-box-title">🇯🇵 일본어</div><div id="jpTweetItems"><span style="font-size:12px;color:var(--text3)">번역 후 표시됩니다</span></div></div>';
+    '<div class="tweet-box"><div class="tweet-box-title">🇰🇷 한국어 <span style="font-size:10px;color:var(--text3);font-weight:400">(클릭하여 수정)</span></div>'+[ai.ko_tw1,ai.ko_tw2,ai.ko_tw3].map(function(t,i){return twH(t,styles[i],twKeys[i]);}).join('')+'<button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="translateTweets()">🇯🇵 트윗 번역</button></div>'+
+    '<div class="tweet-box"><div class="tweet-box-title">🇯🇵 일본어</div><div id="jpTweetItems"><span style="font-size:12px;color:var(--text3)">수정 후 번역 버튼을 눌러주세요</span></div></div>';
 }
 
 function mkEditCard(titleKey, titleVal, bodyKey, bodyVal, time, views, label, comment) {
@@ -492,7 +493,8 @@ function runTranslate() {
     document.getElementById('jpCardsEl').innerHTML = jpCards;
 
     var styles=['공감형','충격형','질문형'];
-    document.getElementById('jpTweetItems').innerHTML = [jp.jp_tw1,jp.jp_tw2,jp.jp_tw3].map(function(t,i){return twH(t,styles[i]);}).join('');
+    var jpTwKeys=['jp_tw1','jp_tw2','jp_tw3'];
+    document.getElementById('jpTweetItems').innerHTML = [jp.jp_tw1,jp.jp_tw2,jp.jp_tw3].map(function(t,i){return twH(t,styles[i],jpTwKeys[i]);}).join('');
     document.getElementById('jpSection').scrollIntoView({behavior:'smooth'});
     showStatus('analyzeStatus','✓ 번역 완료!','success');
   }).catch(function(e){
@@ -542,11 +544,11 @@ function mkRaw(lang, title, time, views, showMeta, body, comment, showComment) {
   return html;
 }
 
-function twH(t, style) {
+function twH(t, style, keyName) {
   var text = t || '';
-  return '<div class="tweet-item"><div class="tweet-style">' + style + '</div><div class="tweet-text">' + esc(text) + '</div><div class="tweet-copy"><button class="copy-btn" onclick="copyT(this)" data-text="' + esc(text) + '">복사</button></div></div>';
+  var editable = keyName ? ' contenteditable="true" data-twkey="'+keyName+'" style="outline:1px dashed var(--accent);border-radius:4px;padding:2px;cursor:text"' : '';
+  return '<div class="tweet-item"><div class="tweet-style">'+style+'</div><div class="tweet-text"'+editable+'>'+esc(text)+'</div><div class="tweet-copy"><button class="copy-btn" onclick="copyT(this)" data-text="'+esc(text)+'">복사</button></div></div>';
 }
-
 function copyT(btn) {
   var text = btn.getAttribute('data-text');
   navigator.clipboard.writeText(text).then(function() {
@@ -575,6 +577,36 @@ function downloadCards(lang) {
   }
   next();
 }
+function translateTweets() {
+  var ai = window.__currentAi || {};
+  // 수정된 트윗 텍스트 수집
+  document.querySelectorAll('[data-twkey]').forEach(function(el) {
+    var key = el.getAttribute('data-twkey');
+    if (key) ai[key] = el.innerText;
+  });
+  window.__currentAi = ai;
+
+  var prompt = '아래 한국어 트윗 3개를 어그로성 일본어 트윗으로 번역하세요 (각 130자 이내, 해시태그 포함).\n\n트윗1: ' + (ai.ko_tw1||'') + '\n트윗2: ' + (ai.ko_tw2||'') + '\n트윗3: ' + (ai.ko_tw3||'') + '\n\nJSON 한 줄로만:\n{"jp_tw1":"","jp_tw2":"","jp_tw3":""}';
+
+  setLoading(true, '트윗 번역 중...');
+  fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+geminiKey, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({contents:[{parts:[{text:prompt}]}], safetySettings:[{category:'HARM_CATEGORY_HARASSMENT',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_HATE_SPEECH',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_SEXUALLY_EXPLICIT',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_DANGEROUS_CONTENT',threshold:'BLOCK_NONE'}], generationConfig:{temperature:0.9,maxOutputTokens:1000}})
+  }).then(function(r){return r.json();}).then(function(data){
+    if (data.error) throw new Error(data.error.message);
+    var text = (data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts&&data.candidates[0].content.parts[0]&&data.candidates[0].content.parts[0].text)||'';
+    var m = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'').match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('JSON 없음');
+    var jp = JSON.parse(m[0]);
+    var styles=['공감형','충격형','질문형'];
+    var jpTwKeys=['jp_tw1','jp_tw2','jp_tw3'];
+    document.getElementById('jpTweetItems').innerHTML = [jp.jp_tw1,jp.jp_tw2,jp.jp_tw3].map(function(t,i){return twH(t,styles[i],jpTwKeys[i]);}).join('');
+    if (window.__currentAi) { window.__currentAi.jp_tw1=jp.jp_tw1; window.__currentAi.jp_tw2=jp.jp_tw2; window.__currentAi.jp_tw3=jp.jp_tw3; }
+  }).catch(function(e){
+    document.getElementById('jpTweetItems').innerHTML = '<span style="color:var(--danger)">❌ '+e.message+'</span>';
+  }).finally(function(){ setLoading(false); });
+}
+
 function esc(s) {
   if (!s) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
