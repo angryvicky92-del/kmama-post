@@ -46,7 +46,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .preview-section{margin-top:32px}
 .preview-header{display:flex;align-items:center;margin-bottom:16px}
 .preview-title{font-size:14px;font-weight:500}
-.cards-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:24px;justify-content:start}
+.cards-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:24px}
 .card-wrap{position:relative}
 .cut-label{font-family:'Space Mono',monospace;font-size:11px;color:var(--text3);margin-bottom:8px}
 .post-card{background:#fff;border-radius:16px;padding:20px;min-height:480px;display:flex;flex-direction:column;color:#111;font-family:'Noto Sans KR',sans-serif}
@@ -80,6 +80,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-msg{font-size:14px;color:var(--text2)}
 @media(max-width:768px){.cards-grid,.tweets-grid,.field-row{grid-template-columns:1fr}}
+.cards-grid { justify-content: start !important; }
 </style>
 </head>
 <body>
@@ -331,23 +332,14 @@ function fetchComments(id) {
 
 function callGemini(article, comments) {
   var best = (comments[0] && comments[0].content) || '';
-  // 조회수: stat.readCnt, 날짜: registrationDate
-  var readCnt = (article.stat && article.stat.readCnt) ? String(article.stat.readCnt) : String(article.viewCount||'').replace(/\D/g,'');
-  var viewStr = readCnt ? readCnt + '회' : '';
-  var dateStr = article.registrationDate ? article.registrationDate.substring(0,10) : ''; = (article.title||'');
+  var safeViews = String(article.viewCount||'').replace(/\D/g,'');
+  var fullTitle = (article.title||'');
   var fullContent = (article.content||'');
   var fullComment = (best||'');
-  // 조회수: stat.readCnt 사용
-  var readCnt = (article.stat && article.stat.readCnt) ? String(article.stat.readCnt) : safeViews;
-  var viewStr = readCnt ? readCnt + '회' : '';
-  // 날짜: registrationDate 사용 (예: "2026-04-14 10:26:00")
+  var viewStr = safeViews ? safeViews + '회' : '';
   var dateStr = '';
-  if (article.registrationDate) {
-    dateStr = article.registrationDate.substring(0, 10); // "2026-04-14"
-  } else if (article.createTime && !isNaN(new Date(article.createTime))) {
-    var dt = new Date(article.createTime);
-    dateStr = dt.getFullYear()+'.'+(dt.getMonth()+1)+'.'+dt.getDate();
-  }
+  if (article.createTime) { var dt=new Date(article.createTime); dateStr=dt.getFullYear()+'.'+(dt.getMonth()+1)+'.'+dt.getDate(); }
+  else if (article.createdAt) { var dt=new Date(article.createdAt); dateStr=dt.getFullYear()+'.'+(dt.getMonth()+1)+'.'+dt.getDate(); }
 
   // 원본 본문을 문단 기준 최대 3파트로 분할
   var paras = fullContent.split(/\n\n+/).filter(function(p){return p.trim();});
@@ -367,7 +359,7 @@ function callGemini(article, comments) {
     orig3 = lines.slice(t*2).join('\n');
   }
 
-  var prompt = '아래 한국 육아 커뮤니티 게시글을 처리하세요.\n\n제목: ' + fullTitle + '\n본문: ' + fullContent + '\n베스트댓글: ' + (fullComment||'없음') + '\n\n[각색 말투 규칙 - 반드시 준수]\n- 실제 맘카페/육아 커뮤니티 말투 사용\n- 구어체, 반말/존댓말 혼용 자연스럽게\n- ㅋㅋ, ㅠㅠ, ㄹㅇ, 진짜, 헐, 대박, 솔직히, 근데, 걍, ~임, ~함, ~ㄷㄷ 등 커뮤니티 표현 적극 사용\n- 문장 짧게 끊기, 줄바꿈 자유롭게\n- 어그로성이지만 공감 유발\n\n요구사항:\n- ko_title_edit: 커뮤니티 말투 어그로성 제목 (예: 헐 이거 실화임?? / ㄹㅇ 공감 100%)\n- ko_body1/ko_body2/ko_body3: 본문을 커뮤니티 말투로 각색하여 3파트 분할 (각 200자, 개인정보 제거)\n- ko_comment_edit: 댓글 커뮤니티 말투로 각색\n- jp_title: ko_title_edit 일본어 번역 (커뮤니티 톤 유지)\n- jp_body1/jp_body2/jp_body3: ko_body1/2/3 일본어 번역\n- jp_comment: 댓글 일본어 번역\n- time_jp: 시간 표현 (例: 14時間前)\n- ko_tw1/ko_tw2/ko_tw3: 커뮤니티 말투 어그로 트윗 (해시태그 포함, 140자)\n- jp_tw1/jp_tw2/jp_tw3: 어그로 일본어 트윗 (해시태그, 130자)\n\nJSON 한 줄로만 응답:\n{"ko_title_edit":"","ko_body1":"","ko_body2":"","ko_body3":"","ko_comment_edit":"","jp_title":"","jp_body1":"","jp_body2":"","jp_body3":"","jp_comment":"","time_jp":"","ko_tw1":"","ko_tw2":"","ko_tw3":"","jp_tw1":"","jp_tw2":"","jp_tw3":""}';
+  var prompt = '아래 한국 육아 커뮤니티 게시글을 처리하세요.\n\n제목: ' + fullTitle + '\n본문: ' + fullContent + '\n베스트댓글: ' + (fullComment||'없음') + '\n\n요구사항:\n- ko_title_edit: 어그로성 각색 제목\n- ko_body1/ko_body2/ko_body3: 본문을 X포스트용으로 각색하여 3파트로 분할 (각 200자 이내, 개인정보 제거)\n- ko_comment_edit: 댓글 각색\n- jp_title: ko_title_edit의 일본어 번역\n- jp_body1/jp_body2/jp_body3: ko_body1/2/3의 일본어 번역 (각 파트 대응)\n- jp_comment: 댓글 일본어 번역\n- time_jp: 시간 표현 (例: 14時間前)\n- ko_tw1/ko_tw2/ko_tw3: 어그로성 한국어 트윗 (해시태그, 140자 이내)\n- jp_tw1/jp_tw2/jp_tw3: 어그로성 일본어 트윗 (해시태그, 130자 이내)\n\nJSON 한 줄로만 응답:\n{"ko_title_edit":"","ko_body1":"","ko_body2":"","ko_body3":"","ko_comment_edit":"","jp_title":"","jp_body1":"","jp_body2":"","jp_body3":"","jp_comment":"","time_jp":"","ko_tw1":"","ko_tw2":"","ko_tw3":"","jp_tw1":"","jp_tw2":"","jp_tw3":""}';
 
   var retryCount = 0; var maxRetry = 5;
   function attempt() {
@@ -416,7 +408,7 @@ function renderAll(article, ai) {
 
   // 일본어 번역 카드 (최대 3장) - 다운로드용
   var jpCards = '';
-  jpCards += mkCard('jp', ai.jp_title, (timeKo || ai.time_jp), views, true, ai.jp_body1, '', '번역 1');
+  jpCards += mkCard('jp', ai.jp_title, ai.time_jp, views, true, ai.jp_body1, '', '번역 1');
   if (ai.jp_body2) jpCards += mkCard('jp', '', '', '', false, ai.jp_body2, '', '번역 2');
   if (ai.jp_body3) jpCards += mkCard('jp', '', '', '', false, ai.jp_body3, ai.jp_comment, '번역 3');
 
