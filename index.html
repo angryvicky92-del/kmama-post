@@ -547,7 +547,8 @@ function mkRaw(lang, title, time, views, showMeta, body, comment, showComment) {
 function twH(t, style, keyName) {
   var text = t || '';
   var editable = keyName ? ' contenteditable="true" data-twkey="'+keyName+'" style="outline:1px dashed var(--accent);border-radius:4px;padding:2px;cursor:text"' : '';
-  return '<div class="tweet-item"><div class="tweet-style">'+style+'</div><div class="tweet-text"'+editable+'>'+esc(text)+'</div><div class="tweet-copy"><button class="copy-btn" onclick="copyT(this)" data-text="'+esc(text)+'">복사</button></div></div>';
+  var checkbox = keyName ? '<label style="display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:11px;color:var(--text2);cursor:pointer"><input type="checkbox" data-twcheck="'+keyName+'" style="accent-color:var(--accent);width:14px;height:14px"> 번역 선택</label>' : '';
+  return '<div class="tweet-item">'+checkbox+'<div class="tweet-style">'+style+'</div><div class="tweet-text"'+editable+'>'+esc(text)+'</div><div class="tweet-copy"><button class="copy-btn" onclick="copyT(this)" data-text="'+esc(text)+'">복사</button></div></div>';
 }
 function copyT(btn) {
   var text = btn.getAttribute('data-text');
@@ -586,7 +587,18 @@ function translateTweets() {
   });
   window.__currentAi = ai;
 
-  var prompt = '아래 한국어 트윗 3개를 어그로성 일본어 트윗으로 번역하세요 (각 130자 이내, 해시태그 포함).\n\n트윗1: ' + (ai.ko_tw1||'') + '\n트윗2: ' + (ai.ko_tw2||'') + '\n트윗3: ' + (ai.ko_tw3||'') + '\n\nJSON 한 줄로만:\n{"jp_tw1":"","jp_tw2":"","jp_tw3":""}';
+  // 선택된 트윗만 번역
+  var selected = {};
+  document.querySelectorAll('[data-twcheck]').forEach(function(cb) {
+    if (cb.checked) selected[cb.getAttribute('data-twcheck')] = true;
+  });
+  var hasSelected = Object.keys(selected).length > 0;
+  // 아무것도 선택 안 하면 전체 번역
+  var tw1 = (!hasSelected || selected['ko_tw1']) ? (ai.ko_tw1||'') : '(번역 안 함)';
+  var tw2 = (!hasSelected || selected['ko_tw2']) ? (ai.ko_tw2||'') : '(번역 안 함)';
+  var tw3 = (!hasSelected || selected['ko_tw3']) ? (ai.ko_tw3||'') : '(번역 안 함)';
+
+  var prompt = '아래 한국어 트윗을 어그로성 일본어 트윗으로 번역하세요 (각 130자 이내, 해시태그 포함). "(번역 안 함)"은 빈 문자열로 반환.\n\n트윗1: ' + tw1 + '\n트윗2: ' + tw2 + '\n트윗3: ' + tw3 + '\n\nJSON 한 줄로만:\n{"jp_tw1":"","jp_tw2":"","jp_tw3":""}';
 
   setLoading(true, '트윗 번역 중...');
   fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+geminiKey, {
