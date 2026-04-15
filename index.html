@@ -476,18 +476,36 @@ function copyT(btn) {
 
 function downloadCards(lang) {
   document.getElementById('dlStatus').textContent = '이미지 생성 중...';
-  var el = document.getElementById(lang === 'ko' ? 'koCardsEl' : 'jpCardsEl');
-  html2canvas(el, { scale: 2, backgroundColor: '#f5f5f0', useCORS: true, logging: false }).then(function(canvas) {
-    var a = document.createElement('a');
-    a.download = 'kmama_' + lang + '_' + Date.now() + '.png';
-    a.href = canvas.toDataURL('image/png');
-    a.click();
-    document.getElementById('dlStatus').textContent = '✓ 다운로드 완료!';
-  }).catch(function(e) {
-    document.getElementById('dlStatus').textContent = '✗ ' + e.message;
-  });
-}
+  var cards = document.getElementById('jpCardsEl').querySelectorAll('.card-wrap > div:last-child');
+  if (!cards || cards.length === 0) {
+    // jpCardsEl이 비어있으면 koCardsEl의 일본어 카드(3번째) 사용
+    var allCards = document.getElementById('koCardsEl').children;
+    cards = [allCards[2]]; // 3번째 카드(일본어)만
+  }
+  // 카드가 없으면 koCardsEl 전체 카드 각각
+  var el = document.getElementById('koCardsEl');
+  var cardWraps = el.querySelectorAll('.card-wrap');
+  if (cardWraps.length === 0) { document.getElementById('dlStatus').textContent = '카드 없음 - 먼저 분석을 실행하세요'; return; }
 
+  var idx = 0;
+  function downloadNext() {
+    if (idx >= cardWraps.length) { document.getElementById('dlStatus').textContent = '✓ ' + cardWraps.length + '장 다운로드 완료!'; return; }
+    var card = cardWraps[idx];
+    var num = idx + 1;
+    idx++;
+    document.getElementById('dlStatus').textContent = num + '번 카드 생성 중...';
+    html2canvas(card, { scale: 2, backgroundColor: '#fff', useCORS: true, logging: false }).then(function(canvas) {
+      var a = document.createElement('a');
+      a.download = num + '.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+      setTimeout(downloadNext, 800);
+    }).catch(function(e) {
+      document.getElementById('dlStatus').textContent = '❌ ' + e.message;
+    });
+  }
+  downloadNext();
+}
 function esc(s) {
   if (!s) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
