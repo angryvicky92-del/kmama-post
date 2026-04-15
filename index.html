@@ -331,8 +331,10 @@ function fetchComments(id) {
 
 function callGemini(article, comments) {
   var best = (comments[0] && comments[0].content) || '';
-  var safeViews = String(article.viewCount||'').replace(/\D/g,'');
-  var fullTitle = (article.title||'');
+  // 조회수: stat.readCnt, 날짜: registrationDate
+  var readCnt = (article.stat && article.stat.readCnt) ? String(article.stat.readCnt) : String(article.viewCount||'').replace(/\D/g,'');
+  var viewStr = readCnt ? readCnt + '회' : '';
+  var dateStr = article.registrationDate ? article.registrationDate.substring(0,10) : ''; = (article.title||'');
   var fullContent = (article.content||'');
   var fullComment = (best||'');
   // 조회수: stat.readCnt 사용
@@ -414,7 +416,7 @@ function renderAll(article, ai) {
 
   // 일본어 번역 카드 (최대 3장) - 다운로드용
   var jpCards = '';
-  jpCards += mkCard('jp', ai.jp_title, ai.time_jp, views, true, ai.jp_body1, '', '번역 1');
+  jpCards += mkCard('jp', ai.jp_title, (timeKo || ai.time_jp), views, true, ai.jp_body1, '', '번역 1');
   if (ai.jp_body2) jpCards += mkCard('jp', '', '', '', false, ai.jp_body2, '', '번역 2');
   if (ai.jp_body3) jpCards += mkCard('jp', '', '', '', false, ai.jp_body3, ai.jp_comment, '번역 3');
 
