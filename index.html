@@ -336,43 +336,18 @@ function callGemini(article, comments) {
   var fullContent = (article.content||'');
   var fullComment = (best||'');
 
-  // 조회수/작성일
   var viewStr = safeViews ? safeViews + '회' : '';
   var dateStr = '';
-  if (article.createTime) {
-    var dt = new Date(article.createTime);
-    dateStr = dt.getFullYear() + '.' + (dt.getMonth()+1) + '.' + dt.getDate();
-  } else if (article.createdAt) {
-    var dt = new Date(article.createdAt);
-    dateStr = dt.getFullYear() + '.' + (dt.getMonth()+1) + '.' + dt.getDate();
-  }
+  if (article.createTime) { var dt=new Date(article.createTime); dateStr=dt.getFullYear()+'.'+(dt.getMonth()+1)+'.'+dt.getDate(); }
+  else if (article.createdAt) { var dt=new Date(article.createdAt); dateStr=dt.getFullYear()+'.'+(dt.getMonth()+1)+'.'+dt.getDate(); }
 
-  // 본문을 문단 기준으로 3분할 (\n\n 기준)
-  var paras = fullContent.split(/\n\n+/).filter(function(p){ return p.trim(); });
-  var cut1, cut2, cut3;
-  if (paras.length >= 3) {
-    var third = Math.ceil(paras.length / 3);
-    cut1 = paras.slice(0, third).join('\n\n');
-    cut2 = paras.slice(third, third*2).join('\n\n');
-    cut3 = paras.slice(third*2).join('\n\n');
-  } else if (paras.length === 2) {
-    cut1 = paras[0]; cut2 = paras[1]; cut3 = '';
-  } else {
-    // 단락 없으면 줄바꿈 기준
-    var lines = fullContent.split('\n').filter(function(l){ return l.trim(); });
-    var third = Math.ceil(lines.length / 3);
-    cut1 = lines.slice(0, third).join('\n');
-    cut2 = lines.slice(third, third*2).join('\n');
-    cut3 = lines.slice(third*2).join('\n');
-  }
-
-  var prompt = '아래 한국 육아 커뮤니티 게시글을 일본어로 번역하세요. 개인정보(이름/지역/병원명) 제거.\n\n제목: ' + fullTitle + '\n본문: ' + fullContent + '\n베스트댓글: ' + (fullComment||'없음') + '\n\n요구사항:\n- jp_body1/2/3: 본문을 내용 흐름에 맞게 3등분 번역 (각 파트에 제목 반복 금지)\n- jp_tw1/2/3: X(트위터)용 어그로성 문구 (충격적/공감유발/논쟁유발 톤, 해시태그 포함, 130자 이내)\n- time_jp: 적절한 시간 표현 (例: 14時間前)\n\nJSON 한 줄로만 응답(마크다운 없이):\n{"jp_title":"","jp_body1":"","jp_body2":"","jp_body3":"","jp_comment":"","time_jp":"","jp_tw1":"","jp_tw2":"","jp_tw3":""}';
+  var prompt = '아래 한국 육아 커뮤니티 게시글을 처리하세요.\n\n[원본]\n제목: ' + fullTitle + '\n본문: ' + fullContent + '\n댓글: ' + (fullComment||'없음') + '\n\n요구사항:\n1. ko_title_edit: 제목을 X(트위터)에서 클릭하고 싶게 각색 (어그로성)\n2. ko_body_edit: 본문을 X포스트용으로 각색 (500자 이내, 개인정보 제거, 어그로성)\n3. jp_title: 각색된 제목의 일본어 번역\n4. jp_body: 각색된 본문의 일본어 번역\n5. jp_comment: 베스트댓글 일본어 번역\n6. time_jp: 적절한 시간 표현 (例: 14時間前)\n7. ko_tw1/ko_tw2/ko_tw3: 어그로성 한국어 트윗 3개 (해시태그 포함, 140자 이내)\n8. jp_tw1/jp_tw2/jp_tw3: 어그로성 일본어 트윗 3개 (해시태그 포함, 130자 이내)\n\nJSON 한 줄로만 응답(마크다운 없이):\n{"ko_title_edit":"","ko_body_edit":"","jp_title":"","jp_body":"","jp_comment":"","time_jp":"","ko_tw1":"","ko_tw2":"","ko_tw3":"","jp_tw1":"","jp_tw2":"","jp_tw3":""}';
 
   var retryCount = 0;
   var maxRetry = 5;
 
   function attempt() {
-    setLoading(true, 'Gemini AI 번역 중' + (retryCount > 0 ? ' (재시도 ' + retryCount + '/' + maxRetry + ')' : '') + '...');
+    setLoading(true, 'Gemini AI 처리 중' + (retryCount > 0 ? ' (재시도 ' + retryCount + '/' + maxRetry + ')' : '') + '...');
     return fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + geminiKey, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -389,9 +364,9 @@ function callGemini(article, comments) {
     }).then(function(r) { return r.json(); }).then(function(data) {
       if (data.error) {
         var msg = data.error.message || '';
-        if ((msg.indexOf('demand') !== -1 || msg.indexOf('quota') !== -1 || msg.indexOf('retry') !== -1) && retryCount < maxRetry) {
+        if ((msg.indexOf('demand')!==-1||msg.indexOf('quota')!==-1||msg.indexOf('retry')!==-1) && retryCount < maxRetry) {
           retryCount++;
-          return new Promise(function(res) { setTimeout(function() { res(attempt()); }, 5000); });
+          return new Promise(function(res){ setTimeout(function(){ res(attempt()); }, 5000); });
         }
         throw new Error(msg);
       }
@@ -400,24 +375,20 @@ function callGemini(article, comments) {
       var m = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'').match(/\{[\s\S]*\}/);
       if (!m) throw new Error('JSON 없음');
       var ai = JSON.parse(m[0]);
-      // 한국어는 원문
-      ai.ko_title = fullTitle;
-      ai.ko_body1 = cut1;
-      ai.ko_body2 = cut2;
-      ai.ko_body3 = cut3;
+      // 원본 필드 추가
+      ai.ko_title_orig = fullTitle;
+      ai.ko_body_orig = fullContent;
       ai.ko_comment = fullComment;
-      ai.time_ko = dateStr || '원문';
-      ai.time_jp = ai.time_jp || '';
+      ai.time_ko = dateStr || '';
       ai.views = viewStr || safeViews;
-      // 어그로성 한국어 트윗
-      ai.ko_tw1 = '실화냐..? ' + fullTitle + ' #육아 #맞팔';
-      ai.ko_tw2 = fullContent.substring(0,80).trim() + '... #공감 #엄마의현실';
-      ai.ko_tw3 = (fullComment||fullTitle).substring(0,80) + ' #육아공감 #현실육아';
+      ai.ko_tw1 = ai.ko_tw1 || '';
+      ai.ko_tw2 = ai.ko_tw2 || '';
+      ai.ko_tw3 = ai.ko_tw3 || '';
       return ai;
     }).catch(function(e) {
       if ((e.message.indexOf('demand')!==-1||e.message.indexOf('retry')!==-1) && retryCount < maxRetry) {
         retryCount++;
-        return new Promise(function(res) { setTimeout(function() { res(attempt()); }, 5000); });
+        return new Promise(function(res){ setTimeout(function(){ res(attempt()); }, 5000); });
       }
       throw e;
     });
@@ -426,10 +397,21 @@ function callGemini(article, comments) {
 }
 function renderAll(article, ai) {
   var views = ai.views || article.viewCount || '';
-  document.getElementById('koPreview').innerHTML = mkCard('ko',1,ai.ko_title,ai.time_ko,views,true,ai.ko_body1,'',false) + mkCard('ko',2,ai.ko_title,'','',false,ai.ko_body2,'',false) + mkCard('ko',3,ai.ko_title,'','',false,ai.ko_body3,ai.ko_comment,true);
-  document.getElementById('jpPreview').innerHTML = mkCard('jp',1,ai.jp_title,ai.time_jp,views,true,ai.jp_body1,'',false) + mkCard('jp',2,ai.jp_title,'','',false,ai.jp_body2,'',false) + mkCard('jp',3,ai.jp_title,'','',false,ai.jp_body3,ai.jp_comment,true);
-  document.getElementById('koCardsEl').innerHTML = mkRaw('ko',ai.ko_title,ai.time_ko,views,true,ai.ko_body1,'',false) + mkRaw('ko',ai.ko_title,'','',false,ai.ko_body2,'',false) + mkRaw('ko',ai.ko_title,'','',false,ai.ko_body3,ai.ko_comment,true);
-  document.getElementById('jpCardsEl').innerHTML = mkRaw('jp',ai.jp_title,ai.time_jp,views,true,ai.jp_body1,'',false) + mkRaw('jp',ai.jp_title,'','',false,ai.jp_body2,'',false) + mkRaw('jp',ai.jp_title,'','',false,ai.jp_body3,ai.jp_comment,true);
+  var timeKo = ai.time_ko || '';
+
+  // 카드 3장: 원본 / AI각색(한국어) / 일본어 번역
+  document.getElementById('koPreview').innerHTML =
+    mkCard('orig', ai.ko_title_orig, timeKo, views, true, ai.ko_body_orig, ai.ko_comment, '원본') +
+    mkCard('ko', ai.ko_title_edit, '', '', false, ai.ko_body_edit, '', 'AI 각색') +
+    mkCard('jp', ai.jp_title, ai.time_jp, views, false, ai.jp_body, ai.jp_comment, '일본어');
+
+  // 다운로드용 (숨김)
+  document.getElementById('koCardsEl').innerHTML =
+    mkRaw('orig', ai.ko_title_orig, timeKo, views, true, ai.ko_body_orig, ai.ko_comment) +
+    mkRaw('ko', ai.ko_title_edit, '', '', false, ai.ko_body_edit, '') +
+    mkRaw('jp', ai.jp_title, ai.time_jp, views, false, ai.jp_body, ai.jp_comment);
+
+  // 트윗
   var styles = ['공감형','충격형','질문형'];
   var koT = [ai.ko_tw1, ai.ko_tw2, ai.ko_tw3];
   var jpT = [ai.jp_tw1, ai.jp_tw2, ai.jp_tw3];
@@ -437,27 +419,25 @@ function renderAll(article, ai) {
     '<div class="tweet-box"><div class="tweet-box-title">🇰🇷 한국어</div>' + koT.map(function(t,i){ return twH(t, styles[i]); }).join('') + '</div>' +
     '<div class="tweet-box"><div class="tweet-box-title">🇯🇵 일본어</div>' + jpT.map(function(t,i){ return twH(t, styles[i]); }).join('') + '</div>';
 }
-
-function mkCard(lang, cut, title, time, views, showMeta, body, comment, showComment) {
+function mkCard(lang, title, time, views, showMeta, body, comment, label) {
   var jp = lang === 'jp';
-  var name = jp ? '韓国ママ' : '한국맘';
-  var html = '<div class="card-wrap"><div class="cut-label">Cut#' + cut + '</div><div class="post-card' + (jp ? ' jp' : '') + '">';
+  var name = jp ? 'ママトーク' : '마미톡';
+  var html = '<div class="card-wrap"><div class="cut-label">' + (label||'') + '</div><div class="post-card' + (jp ? ' jp' : '') + '">';
   html += '<div class="card-handle">@kmama_real</div>';
-  html += '<div class="' + (cut===1 ? 'card-ttl-bold' : 'card-ttl-normal') + '">' + esc(title) + '</div>';
+  html += '<div class="card-ttl-bold">' + esc(title) + '</div>';
   if (showMeta) {
-    html += '<div class="card-meta"><div class="card-avatar">🐻</div><div>';
+    html += '<div class="card-meta"><div class="card-avatar">👶</div><div>';
     html += '<div class="card-meta-name">' + name + '</div>';
-    html += '<div class="card-meta-sub">' + esc(time) + ' •• ' + esc(String(views)) + '</div>';
+    html += '<div class="card-meta-sub">' + esc(time) + ' · ' + esc(String(views)) + '</div>';
     html += '</div></div>';
   }
   html += '<div class="card-body">' + esc(body) + '</div>';
-  if (showComment && comment) {
-    html += '<div class="best-wrap"><div class="best-lbl">👑 베스트 댓글</div><div class="best-txt">' + esc(comment) + '</div></div>';
+  if (comment) {
+    html += '<div class="best-wrap"><div class="best-lbl">💬 베스트 댓글</div><div class="best-txt">' + esc(comment) + '</div></div>';
   }
   html += '</div></div>';
   return html;
 }
-
 function mkRaw(lang, title, time, views, showMeta, body, comment, showComment) {
   var jp = lang === 'jp';
   var name = jp ? '韓国ママ' : '한국맘';
