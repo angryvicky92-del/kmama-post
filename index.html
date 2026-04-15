@@ -466,7 +466,7 @@ function renderAll(article, ai) {
   var styles=['공감형','충격형','질문형'];
   var twKeys=['ko_tw1','ko_tw2','ko_tw3'];
   document.getElementById('tweetsGrid').innerHTML =
-    '<div class="tweet-box"><div class="tweet-box-title">🇰🇷 한국어 <span style="font-size:10px;color:var(--text3);font-weight:400">(클릭하여 수정)</span></div>'+[ai.ko_tw1,ai.ko_tw2,ai.ko_tw3].map(function(t,i){return twH(t,styles[i],twKeys[i]);}).join('')+'<button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="translateTweets()">🇯🇵 트윗 번역</button></div>'+
+    '<div class="tweet-box"><div class="tweet-box-title">🇰🇷 한국어 <span style="font-size:10px;color:var(--text3);font-weight:400">(클릭하여 수정)</span></div>'+[ai.ko_tw1,ai.ko_tw2,ai.ko_tw3].map(function(t,i){return twH((t||'').replace(/#[^\s#]+/g,'').trim(),styles[i],twKeys[i]);}).join('')+'<button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="translateTweets()">🇯🇵 트윗 번역</button></div>'+
     '<div class="tweet-box"><div class="tweet-box-title">🇯🇵 일본어</div><div id="jpTweetItems"><span style="font-size:12px;color:var(--text3)">수정 후 번역 버튼을 눌러주세요</span></div></div>';
 }
 
