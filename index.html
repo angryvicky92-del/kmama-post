@@ -335,39 +335,29 @@ function callGemini(article, comments) {
   var readCnt = (article.stat && article.stat.readCnt) ? String(article.stat.readCnt) : String(article.viewCount||'').replace(/\D/g,'');
   var viewStr = readCnt ? readCnt + '회' : '';
   var dateStr = article.registrationDate ? article.registrationDate.substring(0,10) : '';
-  if (article.createTime) { var dt=new Date(article.createTime); dateStr=dt.getFullYear()+'.'+(dt.getMonth()+1)+'.'+dt.getDate(); }
-  else if (article.createdAt) { var dt=new Date(article.createdAt); dateStr=dt.getFullYear()+'.'+(dt.getMonth()+1)+'.'+dt.getDate(); }
+  var fullTitle = article.title||'';
+  var fullContent = article.content||'';
+  var fullComment = best||'';
 
-  // 원본 본문을 문단 기준 최대 3파트로 분할
   var paras = fullContent.split(/\n\n+/).filter(function(p){return p.trim();});
   var orig1, orig2, orig3;
   if (paras.length >= 3) {
-    var t = Math.ceil(paras.length/3);
-    orig1 = paras.slice(0,t).join('\n\n');
-    orig2 = paras.slice(t,t*2).join('\n\n');
-    orig3 = paras.slice(t*2).join('\n\n');
-  } else if (paras.length === 2) {
-    orig1 = paras[0]; orig2 = paras[1]; orig3 = '';
+    var t=Math.ceil(paras.length/3);
+    orig1=paras.slice(0,t).join('\n\n'); orig2=paras.slice(t,t*2).join('\n\n'); orig3=paras.slice(t*2).join('\n\n');
   } else {
-    var lines = fullContent.split('\n').filter(function(l){return l.trim();});
-    var t = Math.ceil(lines.length/3);
-    orig1 = lines.slice(0,t).join('\n');
-    orig2 = lines.slice(t,t*2).join('\n');
-    orig3 = lines.slice(t*2).join('\n');
+    var lines=fullContent.split('\n').filter(function(l){return l.trim();});
+    var t=Math.ceil(lines.length/3);
+    orig1=lines.slice(0,t).join('\n'); orig2=lines.slice(t,t*2).join('\n'); orig3=lines.slice(t*2).join('\n');
   }
 
-  var prompt = '아래 한국 육아 커뮤니티 게시글을 처리하세요.\n\n제목: ' + fullTitle + '\n본문: ' + fullContent + '\n베스트댓글: ' + (fullComment||'없음') + '\n\n요구사항:\n- ko_title_edit: 어그로성 각색 제목\n- ko_body1/ko_body2/ko_body3: 본문을 X포스트용으로 각색하여 3파트로 분할 (각 200자 이내, 개인정보 제거)\n- ko_comment_edit: 댓글 각색\n- jp_title: ko_title_edit의 일본어 번역\n- jp_body1/jp_body2/jp_body3: ko_body1/2/3의 일본어 번역 (각 파트 대응)\n- jp_comment: 댓글 일본어 번역\n- time_jp: 시간 표현 (例: 14時間前)\n- ko_tw1/ko_tw2/ko_tw3: 어그로성 한국어 트윗 (해시태그, 140자 이내)\n- jp_tw1/jp_tw2/jp_tw3: 어그로성 일본어 트윗 (해시태그, 130자 이내)\n\nJSON 한 줄로만 응답:\n{"ko_title_edit":"","ko_body1":"","ko_body2":"","ko_body3":"","ko_comment_edit":"","jp_title":"","jp_body1":"","jp_body2":"","jp_body3":"","jp_comment":"","time_jp":"","ko_tw1":"","ko_tw2":"","ko_tw3":"","jp_tw1":"","jp_tw2":"","jp_tw3":""}';
+  var prompt = '아래 한국 육아 커뮤니티 게시글을 처리하세요.\n\n제목: ' + fullTitle + '\n본문: ' + fullContent + '\n베스트댓글: ' + (fullComment||'없음') + '\n\n[각색 말투 규칙]\n- ㅋㅋ, ㅠㅠ, ㄹㅇ, 헐, 대박, 걍, ~임, ~ㄷㄷ 등 커뮤니티 표현 사용\n- 문장 짧게, 어그로성\n\n요구사항:\n- ko_title_edit: 커뮤니티 말투 어그로성 제목\n- ko_body1/ko_body2/ko_body3: 커뮤니티 말투 각색 3파트 (각 200자)\n- ko_comment_edit: 댓글 각색\n- ko_tw1/ko_tw2/ko_tw3: 어그로 한국어 트윗 (140자)\n\nJSON 한 줄로만:\n{"ko_title_edit":"","ko_body1":"","ko_body2":"","ko_body3":"","ko_comment_edit":"","ko_tw1":"","ko_tw2":"","ko_tw3":""}';
 
-  var retryCount = 0; var maxRetry = 5;
+  var retryCount=0, maxRetry=5;
   function attempt() {
-    setLoading(true, 'Gemini AI 처리 중'+(retryCount>0?' (재시도 '+retryCount+'/'+maxRetry+')':'')+'...');
-    return fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+geminiKey, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        contents:[{parts:[{text:prompt}]}],
-        safetySettings:[{category:'HARM_CATEGORY_HARASSMENT',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_HATE_SPEECH',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_SEXUALLY_EXPLICIT',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_DANGEROUS_CONTENT',threshold:'BLOCK_NONE'}],
-        generationConfig:{temperature:0.9,maxOutputTokens:8192}
-      })
+    setLoading(true,'Gemini AI 각색 중'+(retryCount>0?' (재시도 '+retryCount+'/'+maxRetry+')':'')+'...');
+    return fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+geminiKey,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{text:prompt}]}],safetySettings:[{category:'HARM_CATEGORY_HARASSMENT',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_HATE_SPEECH',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_SEXUALLY_EXPLICIT',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_DANGEROUS_CONTENT',threshold:'BLOCK_NONE'}],generationConfig:{temperature:0.9,maxOutputTokens:8192}})
     }).then(function(r){return r.json();}).then(function(data){
       if(data.error){var msg=data.error.message||'';if((msg.indexOf('demand')!==-1||msg.indexOf('quota')!==-1||msg.indexOf('retry')!==-1)&&retryCount<maxRetry){retryCount++;return new Promise(function(res){setTimeout(function(){res(attempt());},5000);});}throw new Error(msg);}
       var text=(data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts&&data.candidates[0].content.parts[0]&&data.candidates[0].content.parts[0].text)||'';
@@ -375,10 +365,9 @@ function callGemini(article, comments) {
       var m=text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'').match(/\{[\s\S]*\}/);
       if(!m)throw new Error('JSON 없음');
       var ai=JSON.parse(m[0]);
-      // 원본 파트
       ai.orig1=orig1; ai.orig2=orig2; ai.orig3=orig3;
       ai.orig_title=fullTitle; ai.orig_comment=fullComment;
-      ai.time_ko=dateStr||''; ai.views=viewStr||safeViews;
+      ai.time_ko=dateStr; ai.views=viewStr;
       return ai;
     }).catch(function(e){
       if((e.message.indexOf('demand')!==-1||e.message.indexOf('retry')!==-1)&&retryCount<maxRetry){retryCount++;return new Promise(function(res){setTimeout(function(){res(attempt());},5000);});}
@@ -387,41 +376,110 @@ function callGemini(article, comments) {
   }
   return attempt();
 }
-function renderAll(article, ai) {
-  var views = ai.views || String(article.viewCount||'');
-  var timeKo = ai.time_ko || '';
 
-  // 원본 카드들
+function callGeminiTranslate(ai) {
+  var prompt = '아래 한국어 각색 게시글을 일본어로 번역하세요. 자연스러운 일본 커뮤니티 말투로.\n\n제목: ' + (ai.ko_title_edit||'') + '\n파트1: ' + (ai.ko_body1||'') + '\n파트2: ' + (ai.ko_body2||'') + '\n파트3: ' + (ai.ko_body3||'') + '\n댓글: ' + (ai.ko_comment_edit||'없음') + '\n\nJSON 한 줄로만:\n{"jp_title":"","jp_body1":"","jp_body2":"","jp_body3":"","jp_comment":"","time_jp":"","jp_tw1":"","jp_tw2":"","jp_tw3":""}';
+
+  var retryCount=0, maxRetry=5;
+  function attempt() {
+    setLoading(true,'일본어 번역 중'+(retryCount>0?' (재시도 '+retryCount+'/'+maxRetry+')':'')+'...');
+    return fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+geminiKey,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{text:prompt}]}],safetySettings:[{category:'HARM_CATEGORY_HARASSMENT',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_HATE_SPEECH',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_SEXUALLY_EXPLICIT',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_DANGEROUS_CONTENT',threshold:'BLOCK_NONE'}],generationConfig:{temperature:0.9,maxOutputTokens:8192}})
+    }).then(function(r){return r.json();}).then(function(data){
+      if(data.error){var msg=data.error.message||'';if((msg.indexOf('demand')!==-1||msg.indexOf('quota')!==-1||msg.indexOf('retry')!==-1)&&retryCount<maxRetry){retryCount++;return new Promise(function(res){setTimeout(function(){res(attempt());},5000);});}throw new Error(msg);}
+      var text=(data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts&&data.candidates[0].content.parts[0]&&data.candidates[0].content.parts[0].text)||'';
+      if(!text)throw new Error('응답 없음');
+      var m=text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'').match(/\{[\s\S]*\}/);
+      if(!m)throw new Error('JSON 없음');
+      return JSON.parse(m[0]);
+    }).catch(function(e){
+      if((e.message.indexOf('demand')!==-1||e.message.indexOf('retry')!==-1)&&retryCount<maxRetry){retryCount++;return new Promise(function(res){setTimeout(function(){res(attempt());},5000);});}
+      throw e;
+    });
+  }
+  return attempt();
+}
+function renderAll(article, ai) {
+  var views = ai.views || String((article.stat&&article.stat.readCnt)||article.viewCount||'');
+  var timeKo = ai.time_ko || (article.registrationDate ? article.registrationDate.substring(0,10) : '');
+  window.__currentAi = ai;
+  window.__currentArticle = article;
+
   var origCards = mkCard('orig', ai.orig_title, timeKo, views, true, ai.orig1, '', '원본 1');
   if (ai.orig2) origCards += mkCard('orig', '', '', '', false, ai.orig2, '', '원본 2');
   if (ai.orig3) origCards += mkCard('orig', '', '', '', false, ai.orig3, ai.orig_comment, '원본 3');
 
-  // 각색 카드들
-  var editCards = mkCard('ko', ai.ko_title_edit, timeKo, views, true, ai.ko_body1, '', '각색 1');
-  if (ai.ko_body2) editCards += mkCard('ko', '', '', '', false, ai.ko_body2, '', '각색 2');
-  if (ai.ko_body3) editCards += mkCard('ko', '', '', '', false, ai.ko_body3, ai.ko_comment_edit, '각색 3');
+  var editCards = mkEditCard('ko_title_edit', ai.ko_title_edit, 'ko_body1', ai.ko_body1, timeKo, views, '각색 1');
+  if (ai.ko_body2) editCards += mkEditCard('', '', 'ko_body2', ai.ko_body2, '', '', '각색 2');
+  if (ai.ko_body3) editCards += mkEditCard('', '', 'ko_body3', ai.ko_body3, '', '', '각색 3');
 
-  // 일본어 카드들
-  var jpCards = mkCard('jp', ai.jp_title, ai.time_jp || timeKo, views, true, ai.jp_body1, '', '번역 1');
-  if (ai.jp_body2) jpCards += mkCard('jp', '', '', '', false, ai.jp_body2, '', '번역 2');
-  if (ai.jp_body3) jpCards += mkCard('jp', '', '', '', false, ai.jp_body3, ai.jp_comment, '번역 3');
-
-  // 미리보기: 섹션별 행으로 표시
   document.getElementById('koPreview').innerHTML =
     '<div class="section-label">🇰🇷 원본</div><div class="cards-grid">' + origCards + '</div>' +
-    '<div class="section-label">✏️ AI 각색</div><div class="cards-grid">' + editCards + '</div>' +
-    '<div class="section-label">🇯🇵 일본어 번역</div><div class="cards-grid">' + jpCards + '</div>';
-  document.getElementById('jpPreview').innerHTML = '';
+    '<div class="section-label">✏️ AI 각색 <span style="font-size:11px;color:var(--text3);font-weight:400">(클릭하여 직접 수정 가능)</span></div>' +
+    '<div class="cards-grid">' + editCards + '</div>' +
+    '<div style="margin:20px 0 8px;display:flex;gap:10px;align-items:center">' +
+    '<button class="btn btn-primary" onclick="runTranslate()">🇯🇵 수정 완료 → 일본어 번역 시작</button>' +
+    '<span style="font-size:11px;color:var(--text3)">각색 내용 수정 후 버튼을 눌러주세요</span></div>' +
+    '<div id="jpSection" style="display:none">' +
+    '<div class="section-label">🇯🇵 일본어 번역</div>' +
+    '<div class="cards-grid" id="jpPreviewCards"></div></div>';
 
-  // 다운로드용 - 일본어 카드만
-  document.getElementById('jpCardsEl').innerHTML = jpCards;
+  document.getElementById('jpPreview').innerHTML = '';
+  document.getElementById('jpCardsEl').innerHTML = '';
   document.getElementById('koCardsEl').innerHTML = '';
 
-  // 트윗
-  var styles = ['공감형','충격형','질문형'];
+  var styles=['공감형','충격형','질문형'];
   document.getElementById('tweetsGrid').innerHTML =
-    '<div class="tweet-box"><div class="tweet-box-title">🇰🇷 한국어</div>' + [ai.ko_tw1,ai.ko_tw2,ai.ko_tw3].map(function(t,i){return twH(t,styles[i]);}).join('') + '</div>' +
-    '<div class="tweet-box"><div class="tweet-box-title">🇯🇵 일본어</div>' + [ai.jp_tw1,ai.jp_tw2,ai.jp_tw3].map(function(t,i){return twH(t,styles[i]);}).join('') + '</div>';
+    '<div class="tweet-box"><div class="tweet-box-title">🇰🇷 한국어</div>'+[ai.ko_tw1,ai.ko_tw2,ai.ko_tw3].map(function(t,i){return twH(t,styles[i]);}).join('')+'</div>'+
+    '<div class="tweet-box"><div class="tweet-box-title">🇯🇵 일본어</div><div id="jpTweetItems"><span style="font-size:12px;color:var(--text3)">번역 후 표시됩니다</span></div></div>';
+}
+
+function mkEditCard(titleKey, titleVal, bodyKey, bodyVal, time, views, label) {
+  var showMeta = !!(time || views);
+  var h = '<div class="card-wrap"><div class="cut-label">'+label+'</div><div class="post-card">';
+  h += '<div class="card-handle">@kmama_real</div>';
+  if (titleKey) h += '<div class="card-ttl-bold" contenteditable="true" data-key="'+titleKey+'" style="outline:1px dashed var(--accent);border-radius:4px;padding:2px;cursor:text;min-height:20px">'+esc(titleVal)+'</div>';
+  if (showMeta) {
+    h += '<div class="card-meta"><div class="card-avatar">👶</div><div>';
+    h += '<div class="card-meta-name">한국엄마</div>';
+    h += '<div class="card-meta-sub">'+esc(time)+' · '+esc(views)+'</div>';
+    h += '</div></div>';
+  }
+  h += '<div class="card-body" contenteditable="true" data-key="'+bodyKey+'" style="outline:1px dashed var(--accent);border-radius:4px;padding:2px;cursor:text;white-space:pre-wrap;min-height:40px">'+esc(bodyVal)+'</div>';
+  h += '</div></div>';
+  return h;
+}
+
+function runTranslate() {
+  var ai = window.__currentAi;
+  // 수정된 텍스트 수집
+  document.querySelectorAll('[contenteditable][data-key]').forEach(function(el) {
+    var key = el.getAttribute('data-key');
+    if (key) ai[key] = el.innerText;
+  });
+  window.__currentAi = ai;
+
+  callGeminiTranslate(ai).then(function(jp) {
+    var views = ai.views;
+    var timeKo = ai.time_ko;
+    var jpCards = mkCard('jp', jp.jp_title, jp.time_jp||timeKo, views, true, jp.jp_body1, '', '번역 1');
+    if (jp.jp_body2) jpCards += mkCard('jp', '', '', '', false, jp.jp_body2, '', '번역 2');
+    if (jp.jp_body3) jpCards += mkCard('jp', '', '', '', false, jp.jp_body3, jp.jp_comment, '번역 3');
+
+    document.getElementById('jpSection').style.display = '';
+    document.getElementById('jpPreviewCards').innerHTML = jpCards;
+    document.getElementById('jpCardsEl').innerHTML = jpCards;
+
+    var styles=['공감형','충격형','질문형'];
+    document.getElementById('jpTweetItems').innerHTML = [jp.jp_tw1,jp.jp_tw2,jp.jp_tw3].map(function(t,i){return twH(t,styles[i]);}).join('');
+    document.getElementById('jpSection').scrollIntoView({behavior:'smooth'});
+    showStatus('analyzeStatus','✓ 번역 완료!','success');
+  }).catch(function(e){
+    showStatus('analyzeStatus','✗ '+e.message,'error');
+  }).finally(function(){
+    setLoading(false);
+  });
 }
 function mkCard(lang, title, time, views, showMeta, body, comment, label) {
   var jp = lang === 'jp';
