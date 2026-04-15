@@ -610,38 +610,47 @@ function translateTweets() {
     if (key) ai[key] = el.innerText;
   });
   window.__currentAi = ai;
+
   var selectedKeys = [];
   document.querySelectorAll('[data-twcheck]:checked').forEach(function(cb) {
     selectedKeys.push(cb.getAttribute('data-twcheck'));
   });
   if (selectedKeys.length === 0) selectedKeys = ['ko_tw1','ko_tw2','ko_tw3'];
-  var lines = selectedKeys.map(function(k) {
-    return '트윗' + k.replace('ko_tw','') + ': ' + (ai[k]||'');
-  });
+
   var responseKeys = selectedKeys.map(function(k) { return k.replace('ko_','jp_'); });
-  var jsonTemplate = '{' + responseKeys.map(function(k){ return '"'+k+'":""'; }).join(',') + '}';
-  var prompt = '아래 한국어 트윗을 어그로성 일본어 트윗으로 번역하세요 (각 130자 이내, 해시태그 포함).\n\n' + lines.join('\n') + '\n\nJSON 한 줄로만 응답 (마크다운 금지):\n' + jsonTemplate;
+  var results = {};
+  var pending = selectedKeys.slice();
+
   setLoading(true, '트윗 번역 중...');
-  fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+geminiKey, {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({contents:[{parts:[{text:prompt}]}],safetySettings:[{category:'HARM_CATEGORY_HARASSMENT',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_HATE_SPEECH',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_SEXUALLY_EXPLICIT',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_DANGEROUS_CONTENT',threshold:'BLOCK_NONE'}],generationConfig:{temperature:0.9,maxOutputTokens:1000}})
-  }).then(function(r){return r.json();}).then(function(data){
-    if(data.error) throw new Error(data.error.message);
-    var text=(data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts&&data.candidates[0].content.parts[0]&&data.candidates[0].content.parts[0].text)||'';
-    var cleaned=text.replace(/```json|```/g,'').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'').trim();
-    var m=cleaned.match(/\{[\s\S]*\}/);
-    if(!m) throw new Error('JSON 파싱 실패');
-    var jp=JSON.parse(m[0]);
-    responseKeys.forEach(function(jpKey){ if(jp[jpKey]&&window.__currentAi) window.__currentAi[jpKey]=jp[jpKey]; });
-    var styles=['공감형','충격형','질문형'];
-    var result=['jp_tw1','jp_tw2','jp_tw3'].map(function(k,i){
-      var val=(window.__currentAi&&window.__currentAi[k])||'';
-      return val?twH(val,styles[i],k):'';
-    }).join('');
-    document.getElementById('jpTweetItems').innerHTML=result||'<span style="font-size:12px;color:var(--text3)">번역 결과 없음</span>';
-  }).catch(function(e){
-    document.getElementById('jpTweetItems').innerHTML='<span style="color:var(--danger)">❌ '+e.message+'</span>';
-  }).finally(function(){setLoading(false);});
+
+  function translateOne() {
+    if (pending.length === 0) {
+      responseKeys.forEach(function(jpKey) {
+        if (results[jpKey] && window.__currentAi) window.__currentAi[jpKey] = results[jpKey];
+      });
+      var styles = ['공감형','충격형','질문형'];
+      var rendered = ['jp_tw1','jp_tw2','jp_tw3'].map(function(k,i) {
+        var val = (window.__currentAi && window.__currentAi[k]) || '';
+        return val ? twH(val, styles[i], k) : '';
+      }).join('');
+      document.getElementById('jpTweetItems').innerHTML = rendered || '<span style="font-size:12px;color:var(--text3)">번역 결과 없음</span>';
+      setLoading(false);
+      return;
+    }
+    var koKey = pending.shift();
+    var jpKey = koKey.replace('ko_','jp_');
+    var prompt = '아래 한국어 트윗을 어그로성 일본어로 번역해주세요 (130자 이내, 해시태그 포함).\n\n' + (ai[koKey]||'') + '\n\n번역 결과만 텍스트로 출력:';
+    fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+geminiKey, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{text:prompt}]}],safetySettings:[{category:'HARM_CATEGORY_HARASSMENT',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_HATE_SPEECH',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_SEXUALLY_EXPLICIT',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_DANGEROUS_CONTENT',threshold:'BLOCK_NONE'}],generationConfig:{temperature:0.9,maxOutputTokens:300}})
+    }).then(function(r){return r.json();}).then(function(data){
+      if(data.error) throw new Error(data.error.message);
+      var t=(data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts&&data.candidates[0].content.parts[0]&&data.candidates[0].content.parts[0].text)||'';
+      results[jpKey]=t.trim();
+      translateOne();
+    }).catch(function(e){ results[jpKey]=''; translateOne(); });
+  }
+  translateOne();
 }
 
 function esc(s) {
