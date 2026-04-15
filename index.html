@@ -406,13 +406,31 @@ function renderAll(article, ai) {
   window.__currentAi = ai;
   window.__currentArticle = article;
 
-  var origCards = mkCard('orig', ai.orig_title, timeKo, views, true, ai.orig1, '', '원본 1');
-  if (ai.orig2) origCards += mkCard('orig', '', '', '', false, ai.orig2, '', '원본 2');
-  if (ai.orig3) origCards += mkCard('orig', '', '', '', false, ai.orig3, ai.orig_comment, '원본 3');
+  var origComment = ai.orig_comment || '';
+  var origCards;
+  if (ai.orig3) {
+    origCards = mkCard('orig', ai.orig_title, timeKo, views, true, ai.orig1, '', '원본 1');
+    origCards += mkCard('orig', '', '', '', false, ai.orig2, '', '원본 2');
+    origCards += mkCard('orig', '', '', '', false, ai.orig3, origComment, '원본 3');
+  } else if (ai.orig2) {
+    origCards = mkCard('orig', ai.orig_title, timeKo, views, true, ai.orig1, '', '원본 1');
+    origCards += mkCard('orig', '', '', '', false, ai.orig2, origComment, '원본 2');
+  } else {
+    origCards = mkCard('orig', ai.orig_title, timeKo, views, true, ai.orig1, origComment, '원본 1');
+  }
 
-  var editCards = mkEditCard('ko_title_edit', ai.ko_title_edit, 'ko_body1', ai.ko_body1, timeKo, views, '각색 1');
-  if (ai.ko_body2) editCards += mkEditCard('', '', 'ko_body2', ai.ko_body2, '', '', '각색 2');
-  if (ai.ko_body3) editCards += mkEditCard('', '', 'ko_body3', ai.ko_body3, '', '', '각색 3');
+  var editComment = ai.ko_comment_edit || '';
+  var editCards;
+  if (ai.ko_body3) {
+    editCards = mkEditCard('ko_title_edit', ai.ko_title_edit, 'ko_body1', ai.ko_body1, timeKo, views, '각색 1');
+    editCards += mkEditCard('', '', 'ko_body2', ai.ko_body2, '', '', '각색 2');
+    editCards += mkEditCard('', '', 'ko_body3', ai.ko_body3, '', '', '각색 3', editComment);
+  } else if (ai.ko_body2) {
+    editCards = mkEditCard('ko_title_edit', ai.ko_title_edit, 'ko_body1', ai.ko_body1, timeKo, views, '각색 1');
+    editCards += mkEditCard('', '', 'ko_body2', ai.ko_body2, '', '', '각색 2', editComment);
+  } else {
+    editCards = mkEditCard('ko_title_edit', ai.ko_title_edit, 'ko_body1', ai.ko_body1, timeKo, views, '각색 1', editComment);
+  }
 
   document.getElementById('koPreview').innerHTML =
     '<div class="section-label">🇰🇷 원본</div><div class="cards-grid">' + origCards + '</div>' +
@@ -435,7 +453,7 @@ function renderAll(article, ai) {
     '<div class="tweet-box"><div class="tweet-box-title">🇯🇵 일본어</div><div id="jpTweetItems"><span style="font-size:12px;color:var(--text3)">번역 후 표시됩니다</span></div></div>';
 }
 
-function mkEditCard(titleKey, titleVal, bodyKey, bodyVal, time, views, label) {
+function mkEditCard(titleKey, titleVal, bodyKey, bodyVal, time, views, label, comment) {
   var showMeta = !!(time || views);
   var h = '<div class="card-wrap"><div class="cut-label">'+label+'</div><div class="post-card">';
   h += '<div class="card-handle">@kmama_real</div>';
@@ -447,6 +465,7 @@ function mkEditCard(titleKey, titleVal, bodyKey, bodyVal, time, views, label) {
     h += '</div></div>';
   }
   h += '<div class="card-body" contenteditable="true" data-key="'+bodyKey+'" style="outline:1px dashed var(--accent);border-radius:4px;padding:2px;cursor:text;white-space:pre-wrap;min-height:40px">'+esc(bodyVal)+'</div>';
+  if (comment) h += '<div class="best-wrap"><div class="best-lbl">💬 베스트 댓글</div><div class="best-txt" contenteditable="true" data-key="ko_comment_edit" style="outline:1px dashed var(--accent);border-radius:4px;padding:2px;cursor:text">'+esc(comment)+'</div></div>';
   h += '</div></div>';
   return h;
 }
