@@ -392,7 +392,7 @@ function callGemini(article, comments) {
 }
 function callGeminiTranslate(ai) {
   var origCount = ai.orig3 ? 3 : (ai.orig2 ? 2 : 1);
-  var prompt = '아래 한국어 게시글을 일본어로 직역하세요. 내용을 추가하거나 각색하지 말고 원문 그대로 번역만 하세요.\n\n제목: ' + (ai.ko_title_edit||'') + '\n파트1: ' + (ai.ko_body1||'') + (origCount>=2 ? '\n파트2: ' + (ai.ko_body2||'') : '') + (origCount>=3 ? '\n파트3: ' + (ai.ko_body3||'') : '') + '\n베스트댓글: ' + (ai.ko_comment_edit||'없음') + '\n\n요구사항: 파트 수(' + origCount + '개)에 맞게 jp_body를 생성, jp_comment는 반드시 번역\n\nJSON 한 줄로만:\n{"jp_title":"","jp_body1":"","jp_body2":"","jp_body3":"","jp_comment":"","time_jp":"","jp_tw1":"","jp_tw2":"","jp_tw3":""}';
+  var prompt = '아래 한국어 게시글을 일본어로 번역하세요.\n\n[번역 규칙]\n- 원문 내용과 의미를 100% 유지 (내용 추가/삭제/변경 금지)\n- 말투만 일본 육아 커뮤니티 스타일로 (ね、よ、でしょ、じゃん、だよね 등 자연스러운 구어체)\n- 원문에 없는 문장이나 감탄사 추가 금지\n\n제목: ' + (ai.ko_title_edit||'') + '\n파트1: ' + (ai.ko_body1||'') + (origCount>=2 ? '\n파트2: ' + (ai.ko_body2||'') : '') + (origCount>=3 ? '\n파트3: ' + (ai.ko_body3||'') : '') + '\n베스트댓글: ' + (ai.ko_comment_edit||'없음') + '\n\n요구사항: 파트 수(' + origCount + '개)에 맞게 jp_body를 생성, jp_comment는 반드시 번역\n\nJSON 한 줄로만:\n{"jp_title":"","jp_body1":"","jp_body2":"","jp_body3":"","jp_comment":"","time_jp":"","jp_tw1":"","jp_tw2":"","jp_tw3":""}';
 
   var retryCount=0, maxRetry=5;
   function attempt() {
