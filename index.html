@@ -1,10 +1,8 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
+<html lang="ko"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KMAMA POST Generator</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&amp;family=Noto+Sans+JP:wght@300;400;500;700&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 :root{--bg:#0f0f11;--surface:#18181c;--surface2:#222228;--border:#2e2e38;--accent:#00e5b0;--accent2:#7c6ff7;--text:#f0f0f0;--text2:#999;--text3:#555;--danger:#ff4d6d;--radius:12px;--radius-sm:8px}
@@ -96,8 +94,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     <div class="step active" id="step1">
       <div class="step-header">
         <div class="step-num">1</div>
-        <div class="step-title">API í¤ & ë§ë¯¸í¡ ê³ì  ì¤ì </div>
-        <div class="step-sub">ìµì´ 1íë§ ìë ¥</div>
+        <div class="step-title">API í¤ &amp; ë§ë¯¸í¡ ê³ì&nbsp; ì¤ì&nbsp;</div>
+        <div class="step-sub">ìµì´ 1íë§ ìë&nbsp;¥</div>
       </div>
       <div class="field-row">
         <div class="field">
@@ -105,7 +103,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
           <input type="password" id="geminiKey" placeholder="AIza...">
         </div>
         <div class="field">
-          <label>ë§ë¯¸í¡ ì íë²í¸</label>
+          <label>ë§ë¯¸í¡ ì&nbsp;íë²í¸</label>
           <input type="tel" id="mmPhone" placeholder="01012345678">
         </div>
       </div>
@@ -114,18 +112,18 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
         <input type="password" id="mmPw" placeholder="ë§ë¯¸í¡ ë¹ë°ë²í¸">
       </div>
       <div style="display:flex;gap:10px;margin-top:4px">
-        <button class="btn btn-primary" onclick="saveSettings()">ì ì¥ &amp; ë§ë¯¸í¡ ë¡ê·¸ì¸</button>
-        <button class="btn btn-secondary btn-sm" onclick="loadSettings()">ì ì¥ë ì¤ì  ë¶ë¬ì¤ê¸°</button>
+        <button class="btn btn-primary" onclick="saveSettings()">ì&nbsp;ì¥ &amp; ë§ë¯¸í¡ ë¡ê·¸ì¸</button>
+        <button class="btn btn-secondary btn-sm" onclick="loadSettings()">ì&nbsp;ì¥ë ì¤ì&nbsp; ë¶ë¬ì¤ê¸°</button>
       </div>
       <div id="settingsStatus"></div>
     </div>
     <div class="step" id="step2">
       <div class="step-header">
         <div class="step-num">2</div>
-        <div class="step-title">ê²ìê¸ URL ìë ¥</div>
+        <div class="step-title">ê²ìê¸ URL ìë&nbsp;¥</div>
       </div>
       <div class="field">
-        <label>ë§ë¯¸í¡ ê³µì  ë§í¬ ëë ì§ì  URL</label>
+        <label>ë§ë¯¸í¡ ê³µì&nbsp; ë§í¬ ëë ì§ì&nbsp; URL</label>
         <input type="text" id="postUrl" placeholder="mommytalk.onelink.me/... ëë community.mmtalk.kr/community/article/..." oninput="autoParseUrl(this)">
         <div id="parsedUrlInfo" style="font-size:11px;color:var(--accent);margin-top:4px;display:none"></div>
       </div>
@@ -475,5 +473,6 @@ window.onload = function() {
   if (p) document.getElementById('mmPhone').value = p;
 };
 </script>
-</body>
-</html>
+
+
+</body></html>
