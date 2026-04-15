@@ -83,19 +83,19 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 <body>
 <div class="loading-overlay" id="loadingOverlay">
   <div class="spinner"></div>
-  <div class="loading-msg" id="loadingMsg">ì²ë¦¬ ì¤...</div>
+  <div class="loading-msg" id="loadingMsg">처리 중...</div>
 </div>
 <header class="header">
   <div class="logo">KMAMA<span>/</span>POST</div>
-  <div style="font-size:11px;color:var(--text3);font-family:'Space Mono',monospace">éå½ã³ãã¥ããã£ â Xèªåå</div>
+  <div style="font-size:11px;color:var(--text3);font-family:'Space Mono',monospace">韓国コミュニティ → X自動化</div>
 </header>
 <div class="container">
   <div class="step-wrap">
     <div class="step active" id="step1">
       <div class="step-header">
         <div class="step-num">1</div>
-        <div class="step-title">API í¤ &amp; ë§ë¯¸í¡ ê³ì&nbsp; ì¤ì&nbsp;</div>
-        <div class="step-sub">ìµì´ 1íë§ ìë&nbsp;¥</div>
+        <div class="step-title">API 키 &amp; 마미톡 계�&nbsp;� 설�&nbsp;�</div>
+        <div class="step-sub">최초 1회만 입�&nbsp;�</div>
       </div>
       <div class="field-row">
         <div class="field">
@@ -103,31 +103,31 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
           <input type="password" id="geminiKey" placeholder="AIza...">
         </div>
         <div class="field">
-          <label>ë§ë¯¸í¡ ì&nbsp;íë²í¸</label>
+          <label>마미톡 �&nbsp;�화번호</label>
           <input type="tel" id="mmPhone" placeholder="01012345678">
         </div>
       </div>
       <div class="field">
-        <label>ë§ë¯¸í¡ ë¹ë°ë²í¸</label>
-        <input type="password" id="mmPw" placeholder="ë§ë¯¸í¡ ë¹ë°ë²í¸">
+        <label>마미톡 비밀번호</label>
+        <input type="password" id="mmPw" placeholder="마미톡 비밀번호">
       </div>
       <div style="display:flex;gap:10px;margin-top:4px">
-        <button class="btn btn-primary" onclick="saveSettings()">ì&nbsp;ì¥ &amp; ë§ë¯¸í¡ ë¡ê·¸ì¸</button>
-        <button class="btn btn-secondary btn-sm" onclick="loadSettings()">ì&nbsp;ì¥ë ì¤ì&nbsp; ë¶ë¬ì¤ê¸°</button>
+        <button class="btn btn-primary" onclick="saveSettings()">�&nbsp;�장 &amp; 마미톡 로그인</button>
+        <button class="btn btn-secondary btn-sm" onclick="loadSettings()">�&nbsp;�장된 설�&nbsp;� 불러오기</button>
       </div>
       <div id="settingsStatus"></div>
     </div>
     <div class="step" id="step2">
       <div class="step-header">
         <div class="step-num">2</div>
-        <div class="step-title">ê²ìê¸ URL ìë&nbsp;¥</div>
+        <div class="step-title">게시글 URL 입�&nbsp;�</div>
       </div>
       <div class="field">
-        <label>ë§ë¯¸í¡ ê³µì&nbsp; ë§í¬ ëë ì§ì&nbsp; URL</label>
-        <input type="text" id="postUrl" placeholder="mommytalk.onelink.me/... ëë community.mmtalk.kr/community/article/..." oninput="autoParseUrl(this)">
+        <label>마미톡 공�&nbsp; 링크 또는 직�&nbsp;� URL</label>
+        <input type="text" id="postUrl" placeholder="mommytalk.onelink.me/... 또는 community.mmtalk.kr/community/article/..." oninput="autoParseUrl(this)">
         <div id="parsedUrlInfo" style="font-size:11px;color:var(--accent);margin-top:4px;display:none"></div>
       </div>
-      <button class="btn btn-primary" onclick="runFull()">ë¶ì &amp; ìì± ìì â</button>
+      <button class="btn btn-primary" onclick="runFull()">분석 &amp; 생성 시작 →</button>
       <div id="analyzeStatus"></div>
     </div>
   </div>
@@ -139,28 +139,28 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <div class="prog-step" id="prog4"></div>
     </div>
     <div class="preview-header">
-      <span style="font-size:18px;margin-right:10px">ð°ð·</span>
-      <span class="preview-title">íêµ­ì´ ìë³¸</span>
+      <span style="font-size:18px;margin-right:10px">🇰🇷</span>
+      <span class="preview-title">한국어 원본</span>
     </div>
     <div class="cards-grid" id="koPreview"></div>
     <div style="height:1px;background:var(--border);margin:28px 0"></div>
     <div class="preview-header">
-      <span style="font-size:18px;margin-right:10px">ð¯ðµ</span>
-      <span class="preview-title">ì¼ë³¸ì´ ë²ì­ë³¸</span>
+      <span style="font-size:18px;margin-right:10px">🇯🇵</span>
+      <span class="preview-title">일본어 번역본</span>
     </div>
     <div class="cards-grid" id="jpPreview"></div>
     <div style="height:1px;background:var(--border);margin:28px 0"></div>
     <div class="tweets-section">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:16px">ð</span>
-        <span class="preview-title">í¬ì¤í ì¶ì² ë¬¸êµ¬</span>
+        <span style="font-size:16px">𝕏</span>
+        <span class="preview-title">포스팅 추천 문구</span>
       </div>
       <div class="tweets-grid" id="tweetsGrid"></div>
     </div>
     <div class="action-bar">
-      <button class="btn btn-primary" onclick="downloadCards('ko')">ð°ð· íêµ­ì´ ì¹´ë PNG</button>
-      <button class="btn btn-primary" onclick="downloadCards('jp')">ð¯ðµ ì¼ë³¸ì´ ì¹´ë PNG</button>
-      <button class="btn btn-secondary" onclick="runFull()">âº ì ê²ìê¸ ë¶ì</button>
+      <button class="btn btn-primary" onclick="downloadCards('ko')">🇰🇷 한국어 카드 PNG</button>
+      <button class="btn btn-primary" onclick="downloadCards('jp')">🇯🇵 일본어 카드 PNG</button>
+      <button class="btn btn-secondary" onclick="runFull()">↺ 새 게시글 분석</button>
     </div>
     <div id="dlStatus" style="font-size:12px;color:var(--text2);margin-top:8px;padding:0 4px"></div>
   </div>
@@ -178,8 +178,8 @@ function saveSettings() {
   geminiKey = document.getElementById('geminiKey').value.trim();
   var phone = document.getElementById('mmPhone').value.trim();
   var pw = document.getElementById('mmPw').value.trim();
-  if (!geminiKey) { showStatus('settingsStatus', 'Google AI Studio API í¤ë¥¼ ìë ¥í´ì£¼ì¸ì', 'error'); return; }
-  if (!phone || !pw) { showStatus('settingsStatus', 'ë§ë¯¸í¡ ì íë²í¸ì ë¹ë°ë²í¸ë¥¼ ìë ¥í´ì£¼ì¸ì', 'error'); return; }
+  if (!geminiKey) { showStatus('settingsStatus', 'Google AI Studio API 키를 입력해주세요', 'error'); return; }
+  if (!phone || !pw) { showStatus('settingsStatus', '마미톡 전화번호와 비밀번호를 입력해주세요', 'error'); return; }
   localStorage.setItem('kmama_gemini', geminiKey);
   localStorage.setItem('kmama_phone', phone);
   doLogin(phone, pw);
@@ -190,11 +190,11 @@ function loadSettings() {
   var p = localStorage.getItem('kmama_phone');
   if (k) { document.getElementById('geminiKey').value = k; geminiKey = k; }
   if (p) { document.getElementById('mmPhone').value = p; }
-  showStatus('settingsStatus', k ? 'ì ì¥ë ì¤ì ì ë¶ë¬ììµëë¤. ë¹ë°ë²í¸ ìë ¥ í ë¡ê·¸ì¸í´ì£¼ì¸ì.' : 'ì ì¥ë ì¤ì ì´ ììµëë¤', k ? 'info' : 'error');
+  showStatus('settingsStatus', k ? '저장된 설정을 불러왔습니다. 비밀번호 입력 후 로그인해주세요.' : '저장된 설정이 없습니다', k ? 'info' : 'error');
 }
 
 function doLogin(phone, pw) {
-  showStatus('settingsStatus', 'ë§ë¯¸í¡ ë¡ê·¸ì¸ ì¤...', 'info', true);
+  showStatus('settingsStatus', '마미톡 로그인 중...', 'info', true);
   fetch(GQL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -207,13 +207,13 @@ function doLogin(phone, pw) {
     var result = data && data.data && data.data.login;
     if (result && result.accessToken) {
       mmToken = result.accessToken;
-      showStatus('settingsStatus', 'â ë§ë¯¸í¡ ë¡ê·¸ì¸ ì±ê³µ! URLì ìë ¥íì¸ì', 'success');
+      showStatus('settingsStatus', '✓ 마미톡 로그인 성공! URL을 입력하세요', 'success');
       document.getElementById('step2').classList.add('active');
     } else {
-      showStatus('settingsStatus', 'â ë¡ê·¸ì¸ ì¤í¨: ' + ((result && result.message) || 'ê³ì  ì ë³´ë¥¼ íì¸í´ì£¼ì¸ì'), 'error');
+      showStatus('settingsStatus', '✗ 로그인 실패: ' + ((result && result.message) || '계정 정보를 확인해주세요'), 'error');
     }
   }).catch(function(e) {
-    showStatus('settingsStatus', 'â ì¤ë¥: ' + e.message, 'error');
+    showStatus('settingsStatus', '✗ 오류: ' + e.message, 'error');
   });
 }
 
@@ -227,11 +227,11 @@ function autoParseUrl(input) {
       input.value = webUrl;
       info.style.display = 'block';
       info.style.color = 'var(--accent)';
-      info.textContent = 'â ë¥ë§í¬ìì URL ìë ì¶ì¶: ' + webUrl;
+      info.textContent = '✓ 딥링크에서 URL 자동 추출: ' + webUrl;
     } else {
       info.style.display = 'block';
       info.style.color = 'var(--danger)';
-      info.textContent = 'â URL ì¶ì¶ ì¤í¨ - ì§ì  URLì ìë ¥í´ì£¼ì¸ì';
+      info.textContent = '✗ URL 추출 실패 - 직접 URL을 입력해주세요';
     }
   } else {
     info.style.display = 'none';
@@ -260,30 +260,30 @@ function extractId(url) {
 
 function runFull() {
   var url = document.getElementById('postUrl').value.trim();
-  if (!url) { showStatus('analyzeStatus', 'URLì ìë ¥í´ì£¼ì¸ì', 'error'); return; }
+  if (!url) { showStatus('analyzeStatus', 'URL을 입력해주세요', 'error'); return; }
   geminiKey = geminiKey || document.getElementById('geminiKey').value.trim() || localStorage.getItem('kmama_gemini') || '';
-  if (!geminiKey) { showStatus('analyzeStatus', 'Gemini API í¤ë¥¼ ë¨¼ì  ìë ¥í´ì£¼ì¸ì', 'error'); return; }
+  if (!geminiKey) { showStatus('analyzeStatus', 'Gemini API 키를 먼저 입력해주세요', 'error'); return; }
   var articleId = extractId(url);
-  if (!articleId) { showStatus('analyzeStatus', 'ì¬ë°ë¥¸ ë§ë¯¸í¡ URLì ìë ¥í´ì£¼ì¸ì', 'error'); return; }
-  setLoading(true, 'ê²ìê¸ ìì§ ì¤...'); setProgress(1);
+  if (!articleId) { showStatus('analyzeStatus', '올바른 마미톡 URL을 입력해주세요', 'error'); return; }
+  setLoading(true, '게시글 수집 중...'); setProgress(1);
   document.getElementById('previewSection').style.display = 'none';
   fetchArticle(articleId).then(function(article) {
-    if (!article) throw new Error('ê²ìê¸ì ì°¾ì ì ììµëë¤');
+    if (!article) throw new Error('게시글을 찾을 수 없습니다');
     setProgress(2);
-    setLoading(true, 'ë² ì¤í¸ ëê¸ ìì§ ì¤...');
+    setLoading(true, '베스트 댓글 수집 중...');
     return fetchComments(articleId).then(function(comments) {
       setProgress(3);
-      setLoading(true, 'Gemini AI ë²ì­ ì¤...');
+      setLoading(true, 'Gemini AI 번역 중...');
       return callGemini(article, comments).then(function(ai) {
         setProgress(4);
         renderAll(article, ai);
         document.getElementById('previewSection').style.display = 'block';
         document.getElementById('previewSection').scrollIntoView({ behavior: 'smooth' });
-        showStatus('analyzeStatus', 'â ìë£!', 'success');
+        showStatus('analyzeStatus', '✓ 완료!', 'success');
       });
     });
   }).catch(function(e) {
-    showStatus('analyzeStatus', 'â ' + e.message, 'error');
+    showStatus('analyzeStatus', '✗ ' + e.message, 'error');
   }).finally(function() {
     setLoading(false);
   });
@@ -294,7 +294,7 @@ function fetchArticle(id) {
   var proxies = [PROXY1 + encodeURIComponent(targetUrl), PROXY2 + encodeURIComponent(targetUrl)];
   var idx = 0;
   function tryNext(lastErr) {
-    if (idx >= proxies.length) return Promise.reject(new Error('ê²ìê¸ì ê°ì ¸ì¬ ì ììµëë¤: ' + lastErr));
+    if (idx >= proxies.length) return Promise.reject(new Error('게시글을 가져올 수 없습니다: ' + lastErr));
     var proxyUrl = proxies[idx++];
     return fetch(proxyUrl).then(function(r) {
       if (!r.ok) return tryNext('HTTP ' + r.status);
@@ -302,9 +302,9 @@ function fetchArticle(id) {
     }).then(function(html) {
       var doc = new DOMParser().parseFromString(html, 'text/html');
       var nd = doc.getElementById('__NEXT_DATA__');
-      if (!nd) return tryNext('NEXT_DATA ìì');
+      if (!nd) return tryNext('NEXT_DATA 없음');
       var article = JSON.parse(nd.textContent).props.pageProps.article;
-      if (!article) return tryNext('ê²ìê¸ ì ë³´ ìì');
+      if (!article) return tryNext('게시글 정보 없음');
       return article;
     }).catch(function(e) { return tryNext(e.message); });
   }
@@ -329,13 +329,13 @@ function fetchComments(id) {
 
 function callGemini(article, comments) {
   var best = (comments[0] && comments[0].content) || '';
-  var prompt = 'íêµ­ ì¡ì ì»¤ë®¤ëí° ê²ìê¸ì ì¼ë³¸ X(í¸ìí°)ì©ì¼ë¡ ë³íí´ì£¼ì¸ì.\nì ëª©: ' + article.title + '\nì¡°íì: ' + (article.viewCount||'') + '\në³¸ë¬¸: ' + article.content + '\në² ì¤í¸ëê¸: ' + (best||'ìì') + '\n\nê·ì¹: ê°ì¸ í¹ì  ìì(ì´ë¦,ì§ì­,ë³ìëª) ì ê±°. ìì´ë íì¤ì´ë¡. ìì°ì¤ë¬ì´ ì¼ë³¸ì´.\n\nJSONë§ ìëµ(ë§í¬ë¤ì´ ìì´):\n{"ko_title":"ê°ìë íêµ­ì´ ì ëª©","ko_body1":"íêµ­ì´ Cut1 ë³¸ë¬¸(200ìì´ë´)","ko_body2":"íêµ­ì´ Cut2 ë³¸ë¬¸(200ìì´ë´)","ko_body3":"íêµ­ì´ Cut3+ë§ë¬´ë¦¬(200ìì´ë´)","ko_comment":"ë² ì¤í¸ëê¸ íêµ­ì´(ìì¼ë©´ ë¹ë¬¸ìì´)","jp_title":"ì¼ë³¸ì´ ì ëª©","jp_body1":"ì¼ë³¸ì´ Cut1(150ìì´ë´)","jp_body2":"ì¼ë³¸ì´ Cut2(150ìì´ë´)","jp_body3":"ì¼ë³¸ì´ Cut3(150ìì´ë´)","jp_comment":"ë² ì¤í¸ëê¸ ì¼ë³¸ì´","time_ko":"ìì±ìê° íêµ­ì´","time_jp":"ìì±ìê° ì¼ë³¸ì´(ì:14æéå)","views":"' + (article.viewCount||'') + '","ko_tw1":"íêµ­ì´ ê³µê°í í¸ì(140ì,í´ìíê·¸í¬í¨)","ko_tw2":"íêµ­ì´ ì¶©ê²©í í¸ì(140ì,í´ìíê·¸í¬í¨)","ko_tw3":"íêµ­ì´ ì§ë¬¸í í¸ì(140ì,í´ìíê·¸í¬í¨)","jp_tw1":"ì¼ë³¸ì´ ê³µê°í í¸ì(130ì,í´ìíê·¸í¬í¨)","jp_tw2":"ì¼ë³¸ì´ ì¶©ê²©í í¸ì(130ì,í´ìíê·¸í¬í¨)","jp_tw3":"ì¼ë³¸ì´ ì§ë¬¸í í¸ì(130ì,í´ìíê·¸í¬í¨)"}';
+  var prompt = '한국 육아 커뮤니티 게시글을 일본 X(트위터)용으로 변환해주세요.\n제목: ' + article.title + '\n조회수: ' + (article.viewCount||'') + '\n본문: ' + article.content + '\n베스트댓글: ' + (best||'없음') + '\n\n규칙: 개인 특정 요소(이름,지역,병원명) 제거. 은어는 표준어로. 자연스러운 일본어.\n\nJSON만 응답(마크다운 없이):\n{"ko_title":"각색된 한국어 제목","ko_body1":"한국어 Cut1 본문(200자이내)","ko_body2":"한국어 Cut2 본문(200자이내)","ko_body3":"한국어 Cut3+마무리(200자이내)","ko_comment":"베스트댓글 한국어(없으면 빈문자열)","jp_title":"일본어 제목","jp_body1":"일본어 Cut1(150자이내)","jp_body2":"일본어 Cut2(150자이내)","jp_body3":"일본어 Cut3(150자이내)","jp_comment":"베스트댓글 일본어","time_ko":"작성시간 한국어","time_jp":"작성시간 일본어(예:14時間前)","views":"' + (article.viewCount||'') + '","ko_tw1":"한국어 공감형 트윗(140자,해시태그포함)","ko_tw2":"한국어 충격형 트윗(140자,해시태그포함)","ko_tw3":"한국어 질문형 트윗(140자,해시태그포함)","jp_tw1":"일본어 공감형 트윗(130자,해시태그포함)","jp_tw2":"일본어 충격형 트윗(130자,해시태그포함)","jp_tw3":"일본어 질문형 트윗(130자,해시태그포함)"}';
 
   var models = ['gemini-2.5-flash'];
   var midx = 0;
 
   function tryModel(lastErr) {
-    if (midx >= models.length) return Promise.reject(new Error('Gemini ì¤ë¥: ' + lastErr));
+    if (midx >= models.length) return Promise.reject(new Error('Gemini 오류: ' + lastErr));
     var model = models[midx++];
     return fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + geminiKey, {
       method: 'POST',
@@ -365,29 +365,29 @@ function renderAll(article, ai) {
   document.getElementById('jpPreview').innerHTML = mkCard('jp',1,ai.jp_title,ai.time_jp,views,true,ai.jp_body1,'',false) + mkCard('jp',2,ai.jp_title,'','',false,ai.jp_body2,'',false) + mkCard('jp',3,ai.jp_title,'','',false,ai.jp_body3,ai.jp_comment,true);
   document.getElementById('koCardsEl').innerHTML = mkRaw('ko',ai.ko_title,ai.time_ko,views,true,ai.ko_body1,'',false) + mkRaw('ko',ai.ko_title,'','',false,ai.ko_body2,'',false) + mkRaw('ko',ai.ko_title,'','',false,ai.ko_body3,ai.ko_comment,true);
   document.getElementById('jpCardsEl').innerHTML = mkRaw('jp',ai.jp_title,ai.time_jp,views,true,ai.jp_body1,'',false) + mkRaw('jp',ai.jp_title,'','',false,ai.jp_body2,'',false) + mkRaw('jp',ai.jp_title,'','',false,ai.jp_body3,ai.jp_comment,true);
-  var styles = ['ê³µê°í','ì¶©ê²©í','ì§ë¬¸í'];
+  var styles = ['공감형','충격형','질문형'];
   var koT = [ai.ko_tw1, ai.ko_tw2, ai.ko_tw3];
   var jpT = [ai.jp_tw1, ai.jp_tw2, ai.jp_tw3];
   document.getElementById('tweetsGrid').innerHTML =
-    '<div class="tweet-box"><div class="tweet-box-title">ð°ð· íêµ­ì´</div>' + koT.map(function(t,i){ return twH(t, styles[i]); }).join('') + '</div>' +
-    '<div class="tweet-box"><div class="tweet-box-title">ð¯ðµ ì¼ë³¸ì´</div>' + jpT.map(function(t,i){ return twH(t, styles[i]); }).join('') + '</div>';
+    '<div class="tweet-box"><div class="tweet-box-title">🇰🇷 한국어</div>' + koT.map(function(t,i){ return twH(t, styles[i]); }).join('') + '</div>' +
+    '<div class="tweet-box"><div class="tweet-box-title">🇯🇵 일본어</div>' + jpT.map(function(t,i){ return twH(t, styles[i]); }).join('') + '</div>';
 }
 
 function mkCard(lang, cut, title, time, views, showMeta, body, comment, showComment) {
   var jp = lang === 'jp';
-  var name = jp ? 'éå½ãã' : 'íêµ­ë§';
+  var name = jp ? '韓国ママ' : '한국맘';
   var html = '<div class="card-wrap"><div class="cut-label">Cut#' + cut + '</div><div class="post-card' + (jp ? ' jp' : '') + '">';
   html += '<div class="card-handle">@kmama_real</div>';
   html += '<div class="' + (cut===1 ? 'card-ttl-bold' : 'card-ttl-normal') + '">' + esc(title) + '</div>';
   if (showMeta) {
-    html += '<div class="card-meta"><div class="card-avatar">ð»</div><div>';
+    html += '<div class="card-meta"><div class="card-avatar">🐻</div><div>';
     html += '<div class="card-meta-name">' + name + '</div>';
-    html += '<div class="card-meta-sub">' + esc(time) + ' â¢â¢ ' + esc(String(views)) + '</div>';
+    html += '<div class="card-meta-sub">' + esc(time) + ' •• ' + esc(String(views)) + '</div>';
     html += '</div></div>';
   }
   html += '<div class="card-body">' + esc(body) + '</div>';
   if (showComment && comment) {
-    html += '<div class="best-wrap"><div class="best-lbl">ð ë² ì¤í¸ ëê¸</div><div class="best-txt">' + esc(comment) + '</div></div>';
+    html += '<div class="best-wrap"><div class="best-lbl">👑 베스트 댓글</div><div class="best-txt">' + esc(comment) + '</div></div>';
   }
   html += '</div></div>';
   return html;
@@ -395,21 +395,21 @@ function mkCard(lang, cut, title, time, views, showMeta, body, comment, showComm
 
 function mkRaw(lang, title, time, views, showMeta, body, comment, showComment) {
   var jp = lang === 'jp';
-  var name = jp ? 'éå½ãã' : 'íêµ­ë§';
+  var name = jp ? '韓国ママ' : '한국맘';
   var fontFamily = jp ? 'Noto Sans JP' : 'Noto Sans KR';
   var html = '<div style="background:#fff;border-radius:16px;padding:20px;min-height:480px;display:flex;flex-direction:column;font-family:' + fontFamily + ',sans-serif;color:#111">';
   html += '<div style="font-size:11px;font-weight:700;text-align:center;color:#555;margin-bottom:14px">@kmama_real</div>';
   html += '<div style="font-size:14px;font-weight:600;color:#111;margin-bottom:12px;line-height:1.5">' + esc(title) + '</div>';
   if (showMeta) {
     html += '<div style="display:flex;align-items:center;gap:8px;padding-bottom:12px;border-bottom:1px solid #eee;margin-bottom:12px">';
-    html += '<div style="width:34px;height:34px;border-radius:50%;background:#e8f8f4;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">ð»</div>';
+    html += '<div style="width:34px;height:34px;border-radius:50%;background:#e8f8f4;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🐻</div>';
     html += '<div><div style="font-size:13px;font-weight:600;color:#222">' + name + '</div>';
-    html += '<div style="font-size:11px;color:#888">' + esc(time) + ' â¢â¢ ' + esc(String(views)) + '</div></div></div>';
+    html += '<div style="font-size:11px;color:#888">' + esc(time) + ' •• ' + esc(String(views)) + '</div></div></div>';
   }
   html += '<div style="font-size:13px;line-height:1.85;color:#222;flex:1;white-space:pre-wrap">' + esc(body) + '</div>';
   if (showComment && comment) {
     html += '<div style="margin-top:12px;padding:10px 12px;background:#f0faf6;border-left:3px solid #00c896">';
-    html += '<div style="font-size:10px;color:#00a070;font-weight:700;margin-bottom:4px">ð ë² ì¤í¸ ëê¸</div>';
+    html += '<div style="font-size:10px;color:#00a070;font-weight:700;margin-bottom:4px">👑 베스트 댓글</div>';
     html += '<div style="font-size:12px;color:#1a5a40;line-height:1.65">' + esc(comment) + '</div></div>';
   }
   html += '</div>';
@@ -418,28 +418,28 @@ function mkRaw(lang, title, time, views, showMeta, body, comment, showComment) {
 
 function twH(t, style) {
   var text = t || '';
-  return '<div class="tweet-item"><div class="tweet-style">' + style + '</div><div class="tweet-text">' + esc(text) + '</div><div class="tweet-copy"><button class="copy-btn" onclick="copyT(this)" data-text="' + esc(text) + '">ë³µì¬</button></div></div>';
+  return '<div class="tweet-item"><div class="tweet-style">' + style + '</div><div class="tweet-text">' + esc(text) + '</div><div class="tweet-copy"><button class="copy-btn" onclick="copyT(this)" data-text="' + esc(text) + '">복사</button></div></div>';
 }
 
 function copyT(btn) {
   var text = btn.getAttribute('data-text');
   navigator.clipboard.writeText(text).then(function() {
-    document.getElementById('dlStatus').textContent = 'â ë³µì¬ë¨!';
+    document.getElementById('dlStatus').textContent = '✓ 복사됨!';
     setTimeout(function(){ document.getElementById('dlStatus').textContent = ''; }, 2000);
   });
 }
 
 function downloadCards(lang) {
-  document.getElementById('dlStatus').textContent = 'ì´ë¯¸ì§ ìì± ì¤...';
+  document.getElementById('dlStatus').textContent = '이미지 생성 중...';
   var el = document.getElementById(lang === 'ko' ? 'koCardsEl' : 'jpCardsEl');
   html2canvas(el, { scale: 2, backgroundColor: '#f5f5f0', useCORS: true, logging: false }).then(function(canvas) {
     var a = document.createElement('a');
     a.download = 'kmama_' + lang + '_' + Date.now() + '.png';
     a.href = canvas.toDataURL('image/png');
     a.click();
-    document.getElementById('dlStatus').textContent = 'â ë¤ì´ë¡ë ìë£!';
+    document.getElementById('dlStatus').textContent = '✓ 다운로드 완료!';
   }).catch(function(e) {
-    document.getElementById('dlStatus').textContent = 'â ' + e.message;
+    document.getElementById('dlStatus').textContent = '✗ ' + e.message;
   });
 }
 
