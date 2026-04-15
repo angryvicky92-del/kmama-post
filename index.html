@@ -332,15 +332,33 @@ function fetchComments(id) {
 function callGemini(article, comments) {
   var best = (comments[0] && comments[0].content) || '';
   var prompt = '한국 육아 커뮤니티 게시글을 일본 X(트위터)용으로 변환해주세요.\n제목: ' + article.title + '\n조회수: ' + (article.viewCount||'') + '\n본문: ' + article.content + '\n베스트댓글: ' + (best||'없음') + '\n\n규칙: 개인 특정 요소(이름,지역,병원명) 제거. 은어는 표준어로. 자연스러운 일본어.\n\nJSON만 응답(마크다운 없이):\n{"ko_title":"각색된 한국어 제목","ko_body1":"한국어 Cut1 본문(200자이내)","ko_body2":"한국어 Cut2 본문(200자이내)","ko_body3":"한국어 Cut3+마무리(200자이내)","ko_comment":"베스트댓글 한국어(없으면 빈문자열)","jp_title":"일본어 제목","jp_body1":"일본어 Cut1(150자이내)","jp_body2":"일본어 Cut2(150자이내)","jp_body3":"일본어 Cut3(150자이내)","jp_comment":"베스트댓글 일본어","time_ko":"작성시간 한국어","time_jp":"작성시간 일본어(예:14時間前)","views":"' + (article.viewCount||'') + '","ko_tw1":"한국어 공감형 트윗(140자,해시태그포함)","ko_tw2":"한국어 충격형 트윗(140자,해시태그포함)","ko_tw3":"한국어 질문형 트윗(140자,해시태그포함)","jp_tw1":"일본어 공감형 트윗(130자,해시태그포함)","jp_tw2":"일본어 충격형 트윗(130자,해시태그포함)","jp_tw3":"일본어 질문형 트윗(130자,해시태그포함)"}';
-  return fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + geminiKey, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 2000 } })
-  }).then(function(r) { return r.json(); }).then(function(data) {
-    if (data.error) throw new Error('Gemini 오류: ' + data.error.message);
-    var text = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text) || '';
-    return JSON.parse(text.replace(/```json|```/g, '').trim());
-  });
+
+  var models = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
+  var midx = 0;
+
+  function tryModel(lastErr) {
+    if (midx >= models.length) return Promise.reject(new Error('Gemini 오류: ' + lastErr));
+    var model = models[midx++];
+    return fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + geminiKey, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 2000 } })
+    }).then(function(r) { return r.json(); }).then(function(data) {
+      if (data.error) {
+        var msg = data.error.message || '';
+        if (msg.indexOf('quota') !== -1 || msg.indexOf('Quota') !== -1 || msg.indexOf('RESOURCE_EXHAUSTED') !== -1 || msg.indexOf('not found') !== -1) {
+          return tryModel(msg);
+        }
+        throw new Error(msg);
+      }
+      var text = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text) || '';
+      return JSON.parse(text.replace(/```json|```/g, '').trim());
+    }).catch(function(e) {
+      if (midx < models.length) return tryModel(e.message);
+      throw e;
+    });
+  }
+  return tryModel('');
 }
 
 function renderAll(article, ai) {
