@@ -425,7 +425,7 @@ function renderAll(article, ai) {
 }
 function mkCard(lang, title, time, views, showMeta, body, comment, label) {
   var jp = lang === 'jp';
-  var name = jp ? 'ママトーク' : '마미톡';
+  var name = jp ? '韓国ママ' : '한국엄마';
   var html = '<div class="card-wrap"><div class="cut-label">' + (label||'') + '</div><div class="post-card' + (jp ? ' jp' : '') + '">';
   html += '<div class="card-handle">@kmama_real</div>';
   html += '<div class="card-ttl-bold">' + esc(title) + '</div>';
@@ -444,7 +444,7 @@ function mkCard(lang, title, time, views, showMeta, body, comment, label) {
 }
 function mkRaw(lang, title, time, views, showMeta, body, comment, showComment) {
   var jp = lang === 'jp';
-  var name = jp ? '韓国ママ' : '한국맘';
+  var name = jp ? '韓国ママ' : '한국엄마';
   var fontFamily = jp ? 'Noto Sans JP' : 'Noto Sans KR';
   var html = '<div style="background:#fff;border-radius:16px;padding:20px;min-height:480px;display:flex;flex-direction:column;font-family:' + fontFamily + ',sans-serif;color:#111">';
   html += '<div style="font-size:11px;font-weight:700;text-align:center;color:#555;margin-bottom:14px">@kmama_real</div>';
