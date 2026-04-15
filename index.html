@@ -145,7 +145,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <span style="font-size:18px;margin-right:10px">🇰🇷</span>
       <span class="preview-title">한국어 원본</span>
     </div>
-    <div class="cards-grid" id="koPreview"></div>
+    <div class="preview-wrap" id="koPreview"></div>
     <div style="height:1px;background:var(--border);margin:28px 0"></div>
     <div class="preview-header">
       <span style="font-size:18px;margin-right:10px">🇯🇵</span>
@@ -332,12 +332,9 @@ function fetchComments(id) {
 
 function callGemini(article, comments) {
   var best = (comments[0] && comments[0].content) || '';
-  var safeViews = String(article.viewCount||'').replace(/\D/g,'');
-  var fullTitle = (article.title||'');
-  var fullContent = (article.content||'');
-  var fullComment = (best||'');
-  var viewStr = safeViews ? safeViews + '회' : '';
-  var dateStr = '';
+  var readCnt = (article.stat && article.stat.readCnt) ? String(article.stat.readCnt) : String(article.viewCount||'').replace(/\D/g,'');
+  var viewStr = readCnt ? readCnt + '회' : '';
+  var dateStr = article.registrationDate ? article.registrationDate.substring(0,10) : '';
   if (article.createTime) { var dt=new Date(article.createTime); dateStr=dt.getFullYear()+'.'+(dt.getMonth()+1)+'.'+dt.getDate(); }
   else if (article.createdAt) { var dt=new Date(article.createdAt); dateStr=dt.getFullYear()+'.'+(dt.getMonth()+1)+'.'+dt.getDate(); }
 
