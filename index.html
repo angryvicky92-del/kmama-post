@@ -351,7 +351,7 @@ function callGemini(article, comments) {
     orig1=lines.slice(0,t).join('\n'); orig2=lines.slice(t,t*2).join('\n'); orig3=lines.slice(t*2).join('\n');
   }
 
-  var prompt = '아래 한국 육아 커뮤니티 게시글을 처리하세요.\n\n제목: ' + fullTitle + '\n본문: ' + fullContent + '\n베스트댓글: ' + (fullComment||'없음') + '\n\n[핵심 원칙]\n원문을 최대한 그대로 유지. 단, 일본어로 직역하기 어렵거나 의미 전달이 안 되는 한국 특유 표현만 일본 독자가 이해할 수 있는 비슷한 표현으로 최소한으로 교체.\n\n[교체 대상 예시]\n- 한국 지역명/기관명 → 일본 독자 이해 가능한 표현으로\n- ㅋㅋ→(웃음), ㅠㅠ→(눈물), ㄹㅇ→진짜로, ;;→당황 등 초성/기호 → 풀어서\n- 맘카페, 마미톡 등 → 육아 커뮤니티\n- 한국 특유 호칭(시댁, 친정 등)은 그대로 유지\n- 전체 분량/구성/말투는 원문과 동일하게 유지\n\n요구사항:\n- ko_title_edit: 원문 제목에서 최소한의 표현만 교체\n- ko_body1/ko_body2/ko_body3: 원문 본문을 3등분, 각 파트에서 최소한의 표현만 교체 (200자 이내)\n- ko_comment_edit: 원문 댓글에서 최소한의 표현만 교체\n- ko_tw1/ko_tw2/ko_tw3: 어그로성 한국어 트윗 3개 (해시태그 포함, 140자)\n\nJSON 한 줄로만:\n{"ko_title_edit":"","ko_body1":"","ko_body2":"","ko_body3":"","ko_comment_edit":"","ko_tw1":"","ko_tw2":"","ko_tw3":""}';
+  var prompt = '아래 한국 육아 커뮤니티 게시글을 처리하세요.\n\n제목: ' + fullTitle + '\n본문: ' + fullContent + '\n베스트댓글: ' + (fullComment||'없음') + '\n\n[핵심 원칙]\n원문을 최대한 그대로 유지. 단, 일본어로 직역하기 어렵거나 의미 전달이 안 되는 한국 특유 표현만 일본 독자가 이해할 수 있는 비슷한 표현으로 최소한으로 교체.\n\n[교체 대상 예시]\n- 한국 지역명/기관명 → 일본 독자 이해 가능한 표현으로\n- ㅋㅋ→(웃음), ㅠㅠ→(눈물), ㄹㅇ→진짜로, ;;→당황 등 초성/기호 → 풀어서\n- 맘카페, 마미톡 등 → 육아 커뮤니티\n- 한국 특유 호칭(시댁, 친정 등)은 그대로 유지\n- 전체 분량/구성/말투는 원문과 동일하게 유지\n\n요구사항:\n- ko_title_edit: 원문 제목에서 최소한의 표현만 교체\n- ko_body1/ko_body2/ko_body3: 원문 본문 분량에 맞게 분할(원문이 2파트면 ko_body3는 빈 문자열), 각 파트에서 최소한의 표현만 교체 (200자 이내)\n- ko_comment_edit: 원문 댓글에서 최소한의 표현만 교체\n- ko_tw1/ko_tw2/ko_tw3: 어그로성 한국어 트윗 3개 (해시태그 포함, 140자)\n\nJSON 한 줄로만:\n{"ko_title_edit":"","ko_body1":"","ko_body2":"","ko_body3":"","ko_comment_edit":"","ko_tw1":"","ko_tw2":"","ko_tw3":""}';
 
   var retryCount=0, maxRetry=5;
   function attempt() {
@@ -421,12 +421,14 @@ function renderAll(article, ai) {
   }
 
   var editComment = ai.ko_comment_edit || '';
+  // 원본 파트 수에 맞게 각색 파트 수 결정
+  var origPartCount = ai.orig3 ? 3 : (ai.orig2 ? 2 : 1);
   var editCards;
-  if (ai.ko_body3) {
+  if (origPartCount >= 3 && ai.ko_body3) {
     editCards = mkEditCard('ko_title_edit', ai.ko_title_edit, 'ko_body1', ai.ko_body1, timeKo, views, '각색 1');
     editCards += mkEditCard('', '', 'ko_body2', ai.ko_body2, '', '', '각색 2');
     editCards += mkEditCard('', '', 'ko_body3', ai.ko_body3, '', '', '각색 3', editComment);
-  } else if (ai.ko_body2) {
+  } else if (origPartCount >= 2 && ai.ko_body2) {
     editCards = mkEditCard('ko_title_edit', ai.ko_title_edit, 'ko_body1', ai.ko_body1, timeKo, views, '각색 1');
     editCards += mkEditCard('', '', 'ko_body2', ai.ko_body2, '', '', '각색 2', editComment);
   } else {
