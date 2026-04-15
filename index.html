@@ -336,13 +336,37 @@ function callGemini(article, comments) {
   var fullContent = (article.content||'');
   var fullComment = (best||'');
 
-  // 본문을 3등분
-  var contentLen = fullContent.length;
-  var cut1 = fullContent.substring(0, Math.ceil(contentLen/3));
-  var cut2 = fullContent.substring(Math.ceil(contentLen/3), Math.ceil(contentLen*2/3));
-  var cut3 = fullContent.substring(Math.ceil(contentLen*2/3));
+  // 조회수/작성일
+  var viewStr = safeViews ? safeViews + '회' : '';
+  var dateStr = '';
+  if (article.createTime) {
+    var dt = new Date(article.createTime);
+    dateStr = dt.getFullYear() + '.' + (dt.getMonth()+1) + '.' + dt.getDate();
+  } else if (article.createdAt) {
+    var dt = new Date(article.createdAt);
+    dateStr = dt.getFullYear() + '.' + (dt.getMonth()+1) + '.' + dt.getDate();
+  }
 
-  var prompt = '아래 한국 육아 커뮤니티 게시글을 일본어로 번역하세요. 개인정보(이름/지역/병원명) 제거.\n\n제목: ' + fullTitle + '\n본문: ' + fullContent + '\n베스트댓글: ' + (fullComment||'없음') + '\n\n요구사항:\n- jp_body1/2/3: 본문을 3등분하여 자연스럽게 번역\n- jp_tw1/2/3: X(트위터)용 어그로성 문구 (충격적/공감유발/논쟁유발 톤, 해시태그 포함, 130자 이내)\n- time_jp: 적절한 시간 표현 (例: 14時間前)\n\nJSON 한 줄로만 응답(마크다운 없이):\n{"jp_title":"","jp_body1":"","jp_body2":"","jp_body3":"","jp_comment":"","time_jp":"","jp_tw1":"","jp_tw2":"","jp_tw3":""}';
+  // 본문을 문단 기준으로 3분할 (\n\n 기준)
+  var paras = fullContent.split(/\n\n+/).filter(function(p){ return p.trim(); });
+  var cut1, cut2, cut3;
+  if (paras.length >= 3) {
+    var third = Math.ceil(paras.length / 3);
+    cut1 = paras.slice(0, third).join('\n\n');
+    cut2 = paras.slice(third, third*2).join('\n\n');
+    cut3 = paras.slice(third*2).join('\n\n');
+  } else if (paras.length === 2) {
+    cut1 = paras[0]; cut2 = paras[1]; cut3 = '';
+  } else {
+    // 단락 없으면 줄바꿈 기준
+    var lines = fullContent.split('\n').filter(function(l){ return l.trim(); });
+    var third = Math.ceil(lines.length / 3);
+    cut1 = lines.slice(0, third).join('\n');
+    cut2 = lines.slice(third, third*2).join('\n');
+    cut3 = lines.slice(third*2).join('\n');
+  }
+
+  var prompt = '아래 한국 육아 커뮤니티 게시글을 일본어로 번역하세요. 개인정보(이름/지역/병원명) 제거.\n\n제목: ' + fullTitle + '\n본문: ' + fullContent + '\n베스트댓글: ' + (fullComment||'없음') + '\n\n요구사항:\n- jp_body1/2/3: 본문을 내용 흐름에 맞게 3등분 번역 (각 파트에 제목 반복 금지)\n- jp_tw1/2/3: X(트위터)용 어그로성 문구 (충격적/공감유발/논쟁유발 톤, 해시태그 포함, 130자 이내)\n- time_jp: 적절한 시간 표현 (例: 14時間前)\n\nJSON 한 줄로만 응답(마크다운 없이):\n{"jp_title":"","jp_body1":"","jp_body2":"","jp_body3":"","jp_comment":"","time_jp":"","jp_tw1":"","jp_tw2":"","jp_tw3":""}';
 
   var retryCount = 0;
   var maxRetry = 5;
@@ -372,22 +396,23 @@ function callGemini(article, comments) {
         throw new Error(msg);
       }
       var text = (data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts&&data.candidates[0].content.parts[0]&&data.candidates[0].content.parts[0].text)||'';
-      if (!text) throw new Error('응답 없음 (finishReason: ' + (data.candidates&&data.candidates[0]&&data.candidates[0].finishReason) + ')');
+      if (!text) throw new Error('응답 없음');
       var m = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'').match(/\{[\s\S]*\}/);
       if (!m) throw new Error('JSON 없음');
       var ai = JSON.parse(m[0]);
-      // 한국어는 원문 그대로
+      // 한국어는 원문
       ai.ko_title = fullTitle;
       ai.ko_body1 = cut1;
       ai.ko_body2 = cut2;
       ai.ko_body3 = cut3;
       ai.ko_comment = fullComment;
-      ai.time_ko = '원문';
-      ai.views = safeViews;
-      // 한국어 트윗도 어그로성으로
-      ai.ko_tw1 = '【衝撃】' + fullTitle.substring(0,50) + ' #育児 #ママ友';
-      ai.ko_tw2 = fullContent.substring(0,80) + '... #共感 #ママの本音';
-      ai.ko_tw3 = (fullComment||fullTitle).substring(0,80) + ' #育児あるある';
+      ai.time_ko = dateStr || '원문';
+      ai.time_jp = ai.time_jp || '';
+      ai.views = viewStr || safeViews;
+      // 어그로성 한국어 트윗
+      ai.ko_tw1 = '실화냐..? ' + fullTitle + ' #육아 #맞팔';
+      ai.ko_tw2 = fullContent.substring(0,80).trim() + '... #공감 #엄마의현실';
+      ai.ko_tw3 = (fullComment||fullTitle).substring(0,80) + ' #육아공감 #현실육아';
       return ai;
     }).catch(function(e) {
       if ((e.message.indexOf('demand')!==-1||e.message.indexOf('retry')!==-1) && retryCount < maxRetry) {
