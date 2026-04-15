@@ -610,29 +610,25 @@ function translateTweets() {
     if (key) ai[key] = el.innerText;
   });
   window.__currentAi = ai;
-
   var selectedKeys = [];
   document.querySelectorAll('[data-twcheck]:checked').forEach(function(cb) {
     selectedKeys.push(cb.getAttribute('data-twcheck'));
   });
   if (selectedKeys.length === 0) selectedKeys = ['ko_tw1','ko_tw2','ko_tw3'];
-
-  var responseKeys = selectedKeys.map(function(k) { return k.replace('ko_','jp_'); });
-  var results = {};
   var pending = selectedKeys.slice();
-
+  var results = {};
+  var jpTwMap = {jp_tw1:'공감형', jp_tw2:'충격형', jp_tw3:'질문형'};
   setLoading(true, '트윗 번역 중...');
-
   function translateOne() {
     if (pending.length === 0) {
-      responseKeys.forEach(function(jpKey) {
-        if (results[jpKey] && window.__currentAi) window.__currentAi[jpKey] = results[jpKey];
+      Object.keys(results).forEach(function(jpKey) {
+        if (window.__currentAi) window.__currentAi[jpKey] = results[jpKey];
       });
-      var styles = ['공감형','충격형','질문형'];
-      var rendered = ['jp_tw1','jp_tw2','jp_tw3'].map(function(k,i) {
+      var rendered = '';
+      ['jp_tw1','jp_tw2','jp_tw3'].forEach(function(k) {
         var val = (window.__currentAi && window.__currentAi[k]) || '';
-        return val ? twH(val, styles[i], k) : '';
-      }).join('');
+        if (val) rendered += twH(val, jpTwMap[k], k);
+      });
       document.getElementById('jpTweetItems').innerHTML = rendered || '<span style="font-size:12px;color:var(--text3)">번역 결과 없음</span>';
       setLoading(false);
       return;
@@ -648,7 +644,7 @@ function translateTweets() {
       var t=(data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts&&data.candidates[0].content.parts[0]&&data.candidates[0].content.parts[0].text)||'';
       results[jpKey]=t.trim();
       translateOne();
-    }).catch(function(e){ results[jpKey]=''; translateOne(); });
+    }).catch(function(){ translateOne(); });
   }
   translateOne();
 }
