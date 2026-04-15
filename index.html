@@ -332,9 +332,12 @@ function fetchComments(id) {
 function callGemini(article, comments) {
   var best = (comments[0] && comments[0].content) || '';
   var safeViews = String(article.viewCount||'').replace(/\D/g,'');
-  // 본문 200자로 제한하여 토큰 절약
-  var shortContent = (article.content||'').substring(0,200);
-  var prompt = '한국 육아 게시글을 일본어 X포스트용으로 변환. 개인정보 제거.\n제목: ' + (article.title||'').substring(0,100) + '\n본문: ' + shortContent + '\n댓글: ' + (best||'없음').substring(0,100) + '\n\n아래 JSON 형식으로만 답하세요 (한 줄, 마크다운 없이):\n{"ko_title":"","ko_body1":"","ko_body2":"","ko_body3":"","ko_comment":"","jp_title":"","jp_body1":"","jp_body2":"","jp_body3":"","jp_comment":"","time_ko":"","time_jp":"","views":"' + safeViews + '","ko_tw1":"","ko_tw2":"","ko_tw3":"","jp_tw1":"","jp_tw2":"","jp_tw3":""}';
+  var title = (article.title||'').substring(0,150);
+  var content = (article.content||'').substring(0,300);
+  var comment = (best||'').substring(0,100);
+
+  // 일본어 번역만 요청 (한국어는 원문 사용)
+  var prompt = '아래 한국 육아 게시글을 일본어로 번역해주세요. 개인정보(이름/지역/병원명)는 제거.\n\n제목: ' + title + '\n본문: ' + content + '\n댓글: ' + (comment||'없음') + '\n\nJSON 한 줄로만 응답(마크다운 없이):\n{"jp_title":"일본어제목","jp_body1":"일본어본문파트1(150자)","jp_body2":"일본어본문파트2(150자)","jp_body3":"일본어본문파트3(150자)","jp_comment":"일본어댓글","time_jp":"시간前","jp_tw1":"일본어트윗1(130자)","jp_tw2":"일본어트윗2(130자)","jp_tw3":"일본어트윗3(130자)"}';
 
   var retryCount = 0;
   var maxRetry = 5;
@@ -344,7 +347,16 @@ function callGemini(article, comments) {
     return fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + geminiKey, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({contents: [{parts: [{text: prompt}]}], safetySettings: [{category:'HARM_CATEGORY_HARASSMENT',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_HATE_SPEECH',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_SEXUALLY_EXPLICIT',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_DANGEROUS_CONTENT',threshold:'BLOCK_NONE'}], generationConfig: {temperature: 0.7, maxOutputTokens: 8192}})
+      body: JSON.stringify({
+        contents: [{parts: [{text: prompt}]}],
+        safetySettings: [
+          {category:'HARM_CATEGORY_HARASSMENT',threshold:'BLOCK_NONE'},
+          {category:'HARM_CATEGORY_HATE_SPEECH',threshold:'BLOCK_NONE'},
+          {category:'HARM_CATEGORY_SEXUALLY_EXPLICIT',threshold:'BLOCK_NONE'},
+          {category:'HARM_CATEGORY_DANGEROUS_CONTENT',threshold:'BLOCK_NONE'}
+        ],
+        generationConfig: {temperature: 0.7, maxOutputTokens: 8192}
+      })
     }).then(function(r) { return r.json(); }).then(function(data) {
       if (data.error) {
         var msg = data.error.message || '';
@@ -355,13 +367,24 @@ function callGemini(article, comments) {
         throw new Error(msg);
       }
       var text = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text) || '';
-      if (!text) {
-        var reason = (data.candidates && data.candidates[0] && data.candidates[0].finishReason) || '';
-        throw new Error('응답 없음 (reason: ' + reason + ') - 이 게시글은 AI 안전 필터에 걸렸습니다. 다른 게시글을 시도해주세요.');
-      }
+      if (!text) throw new Error('응답 없음 (reason: ' + (data.candidates&&data.candidates[0]&&data.candidates[0].finishReason) + ')');
       var m = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'').match(/\{[\s\S]*\}/);
-      if (!m) throw new Error('JSON 파싱 실패 - 응답: ' + text.substring(0,100));
-      try { return JSON.parse(m[0]); } catch(e) { throw new Error('JSON 오류: ' + e.message + ' / 내용: ' + m[0].substring(0,100)); }
+      if (!m) throw new Error('JSON 없음: ' + text.substring(0,100));
+      try {
+        var ai = JSON.parse(m[0]);
+        // 한국어는 원문으로 채워서 반환
+        ai.ko_title = title;
+        ai.ko_body1 = content.substring(0, 200);
+        ai.ko_body2 = content.substring(200, 400);
+        ai.ko_body3 = comment || '';
+        ai.ko_comment = comment;
+        ai.time_ko = '원문';
+        ai.views = safeViews;
+        ai.ko_tw1 = title;
+        ai.ko_tw2 = content.substring(0,100);
+        ai.ko_tw3 = comment;
+        return ai;
+      } catch(e) { throw new Error('파싱 실패: ' + e.message); }
     }).catch(function(e) {
       if ((e.message.indexOf('demand') !== -1 || e.message.indexOf('retry') !== -1) && retryCount < maxRetry) {
         retryCount++;
