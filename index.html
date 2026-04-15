@@ -391,45 +391,40 @@ function callGemini(article, comments) {
   return attempt();
 }
 function renderAll(article, ai) {
-  var views = ai.views || article.viewCount || '';
+  var views = ai.views || String(article.viewCount||'');
   var timeKo = ai.time_ko || '';
 
-  // 원본 카드 (최대 3장)
-  var origCards = '';
-  origCards += mkCard('orig', ai.orig_title, timeKo, views, true, ai.orig1, '', '원본 1');
+  // 원본 카드들
+  var origCards = mkCard('orig', ai.orig_title, timeKo, views, true, ai.orig1, '', '원본 1');
   if (ai.orig2) origCards += mkCard('orig', '', '', '', false, ai.orig2, '', '원본 2');
   if (ai.orig3) origCards += mkCard('orig', '', '', '', false, ai.orig3, ai.orig_comment, '원본 3');
 
-  // 각색 카드 (최대 3장)
-  var editCards = '';
-  editCards += mkCard('ko', ai.ko_title_edit, timeKo, views, true, ai.ko_body1, '', '각색 1');
+  // 각색 카드들
+  var editCards = mkCard('ko', ai.ko_title_edit, timeKo, views, true, ai.ko_body1, '', '각색 1');
   if (ai.ko_body2) editCards += mkCard('ko', '', '', '', false, ai.ko_body2, '', '각색 2');
   if (ai.ko_body3) editCards += mkCard('ko', '', '', '', false, ai.ko_body3, ai.ko_comment_edit, '각색 3');
 
-  // 일본어 번역 카드 (최대 3장) - 다운로드용
-  var jpCards = '';
-  jpCards += mkCard('jp', ai.jp_title, ai.time_jp, views, true, ai.jp_body1, '', '번역 1');
+  // 일본어 카드들
+  var jpCards = mkCard('jp', ai.jp_title, ai.time_jp, views, true, ai.jp_body1, '', '번역 1');
   if (ai.jp_body2) jpCards += mkCard('jp', '', '', '', false, ai.jp_body2, '', '번역 2');
   if (ai.jp_body3) jpCards += mkCard('jp', '', '', '', false, ai.jp_body3, ai.jp_comment, '번역 3');
 
-  // 미리보기 - 3섹션 표시
+  // 미리보기: 섹션별 행으로 표시
   document.getElementById('koPreview').innerHTML =
-    '<div style="margin-bottom:8px;font-size:11px;color:var(--text3);font-family:Space Mono,monospace">── 원본 ──</div>' + origCards +
-    '<div style="margin:16px 0 8px;font-size:11px;color:var(--text3);font-family:Space Mono,monospace">── AI 각색 ──</div>' + editCards +
-    '<div style="margin:16px 0 8px;font-size:11px;color:var(--text3);font-family:Space Mono,monospace">── 일본어 번역 ──</div>' + jpCards;
+    '<div class="section-label">🇰🇷 원본</div><div class="cards-grid">' + origCards + '</div>' +
+    '<div class="section-label">✏️ AI 각색</div><div class="cards-grid">' + editCards + '</div>' +
+    '<div class="section-label">🇯🇵 일본어 번역</div><div class="cards-grid">' + jpCards + '</div>';
   document.getElementById('jpPreview').innerHTML = '';
 
-  // 다운로드용 - 일본어 번역 카드만
+  // 다운로드용 - 일본어 카드만
   document.getElementById('jpCardsEl').innerHTML = jpCards;
   document.getElementById('koCardsEl').innerHTML = '';
 
   // 트윗
-  var styles=['공감형','충격형','질문형'];
-  var koT=[ai.ko_tw1,ai.ko_tw2,ai.ko_tw3];
-  var jpT=[ai.jp_tw1,ai.jp_tw2,ai.jp_tw3];
-  document.getElementById('tweetsGrid').innerHTML=
-    '<div class="tweet-box"><div class="tweet-box-title">🇰🇷 한국어</div>'+koT.map(function(t,i){return twH(t,styles[i]);}).join('')+'</div>'+
-    '<div class="tweet-box"><div class="tweet-box-title">🇯🇵 일본어</div>'+jpT.map(function(t,i){return twH(t,styles[i]);}).join('')+'</div>';
+  var styles = ['공감형','충격형','질문형'];
+  document.getElementById('tweetsGrid').innerHTML =
+    '<div class="tweet-box"><div class="tweet-box-title">🇰🇷 한국어</div>' + [ai.ko_tw1,ai.ko_tw2,ai.ko_tw3].map(function(t,i){return twH(t,styles[i]);}).join('') + '</div>' +
+    '<div class="tweet-box"><div class="tweet-box-title">🇯🇵 일본어</div>' + [ai.jp_tw1,ai.jp_tw2,ai.jp_tw3].map(function(t,i){return twH(t,styles[i]);}).join('') + '</div>';
 }
 function mkCard(lang, title, time, views, showMeta, body, comment, label) {
   var jp = lang === 'jp';
