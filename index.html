@@ -335,10 +335,17 @@ function callGemini(article, comments) {
   var fullTitle = (article.title||'');
   var fullContent = (article.content||'');
   var fullComment = (best||'');
-  var viewStr = safeViews ? safeViews + '회' : '';
+  // 조회수: stat.readCnt 사용
+  var readCnt = (article.stat && article.stat.readCnt) ? String(article.stat.readCnt) : safeViews;
+  var viewStr = readCnt ? readCnt + '회' : '';
+  // 날짜: registrationDate 사용 (예: "2026-04-14 10:26:00")
   var dateStr = '';
-  if (article.createTime) { var dt=new Date(article.createTime); dateStr=dt.getFullYear()+'.'+(dt.getMonth()+1)+'.'+dt.getDate(); }
-  else if (article.createdAt) { var dt=new Date(article.createdAt); dateStr=dt.getFullYear()+'.'+(dt.getMonth()+1)+'.'+dt.getDate(); }
+  if (article.registrationDate) {
+    dateStr = article.registrationDate.substring(0, 10); // "2026-04-14"
+  } else if (article.createTime && !isNaN(new Date(article.createTime))) {
+    var dt = new Date(article.createTime);
+    dateStr = dt.getFullYear()+'.'+(dt.getMonth()+1)+'.'+dt.getDate();
+  }
 
   // 원본 본문을 문단 기준 최대 3파트로 분할
   var paras = fullContent.split(/\n\n+/).filter(function(p){return p.trim();});
