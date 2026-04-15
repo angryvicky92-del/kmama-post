@@ -340,25 +340,38 @@ function callGemini(article, comments) {
   var fullContent = article.content||'';
   var fullComment = best||'';
 
+  // 원본 본문을 문단 기준으로 분할
   var paras = fullContent.split(/\n\n+/).filter(function(p){return p.trim();});
   var orig1, orig2, orig3;
   if (paras.length >= 3) {
     var t=Math.ceil(paras.length/3);
-    orig1=paras.slice(0,t).join('\n\n'); orig2=paras.slice(t,t*2).join('\n\n'); orig3=paras.slice(t*2).join('\n\n');
+    orig1=paras.slice(0,t).join('\n\n');
+    orig2=paras.slice(t,t*2).join('\n\n');
+    orig3=paras.slice(t*2).join('\n\n');
+  } else if (paras.length === 2) {
+    orig1=paras[0]; orig2=paras[1]; orig3='';
   } else {
     var lines=fullContent.split('\n').filter(function(l){return l.trim();});
     var t=Math.ceil(lines.length/3);
-    orig1=lines.slice(0,t).join('\n'); orig2=lines.slice(t,t*2).join('\n'); orig3=lines.slice(t*2).join('\n');
+    orig1=lines.slice(0,t).join('\n');
+    orig2=lines.slice(t,t*2).join('\n');
+    orig3=lines.slice(t*2).join('\n');
   }
+  var partCount = orig3 ? 3 : (orig2 ? 2 : 1);
 
-  var prompt = '아래 한국 육아 커뮤니티 게시글을 처리하세요.\n\n제목: ' + fullTitle + '\n본문: ' + fullContent + '\n베스트댓글: ' + (fullComment||'없음') + '\n\n[핵심 원칙]\n원문을 최대한 그대로 유지. 단, 일본어로 직역하기 어렵거나 의미 전달이 안 되는 한국 특유 표현만 일본 독자가 이해할 수 있는 비슷한 표현으로 최소한으로 교체.\n\n[교체 대상 예시]\n- 한국 지역명/기관명 → 일본 독자 이해 가능한 표현으로\n- ㅋㅋ→(웃음), ㅠㅠ→(눈물), ㄹㅇ→진짜로, ;;→당황 등 초성/기호 → 풀어서\n- 맘카페, 마미톡 등 → 육아 커뮤니티\n- 한국 특유 호칭(시댁, 친정 등)은 그대로 유지\n- 전체 분량/구성/말투는 원문과 동일하게 유지\n\n요구사항:\n- ko_title_edit: 원문 제목에서 최소한의 표현만 교체\n- ko_body1/ko_body2/ko_body3: 원문 본문 분량에 맞게 분할(원문이 2파트면 ko_body3는 빈 문자열), 각 파트에서 최소한의 표현만 교체 (200자 이내)\n- ko_comment_edit: 원문 댓글에서 최소한의 표현만 교체\n- ko_tw1/ko_tw2/ko_tw3: 어그로성 한국어 트윗 3개 (해시태그 포함, 140자)\n\nJSON 한 줄로만:\n{"ko_title_edit":"","ko_body1":"","ko_body2":"","ko_body3":"","ko_comment_edit":"","ko_tw1":"","ko_tw2":"","ko_tw3":""}';
+  // 프롬프트: 각 파트를 명시적으로 전달해서 1:1 대응 강제
+  var partLines = '파트1 원문: ' + orig1;
+  if (orig2) partLines += '\n\n파트2 원문: ' + orig2;
+  if (orig3) partLines += '\n\n파트3 원문: ' + orig3;
+
+  var prompt = '아래 한국 육아 커뮤니티 게시글을 처리하세요.\n\n제목: ' + fullTitle + '\n\n' + partLines + '\n\n베스트댓글: ' + (fullComment||'없음') + '\n\n[핵심 원칙]\n- 각 파트별로 원문을 최대한 유지\n- 일본어로 직역 어려운 표현만 최소한으로 교체 (ㅋㅋ→(웃음), ㅠㅠ→(눈물), ㄹㅇ→진짜로 등)\n- 파트 수는 원문과 동일하게 유지 (파트' + partCount + '개)\n- ko_body1은 파트1 원문 기반, ko_body2는 파트2 원문 기반, ko_body3는 파트3 원문 기반\n\n요구사항:\n- ko_title_edit: 제목에서 최소한의 표현만 교체\n- ko_body1: 파트1 원문 기반 각색 (파트2가 없으면 ko_body1에만 전체 내용)\n- ko_body2: 파트2 원문 기반 각색 (없으면 빈 문자열)\n- ko_body3: 파트3 원문 기반 각색 (없으면 빈 문자열)\n- ko_comment_edit: 댓글 최소 교체\n- ko_tw1/ko_tw2/ko_tw3: 어그로성 한국어 트윗 (해시태그, 140자)\n\nJSON 한 줄로만:\n{"ko_title_edit":"","ko_body1":"","ko_body2":"","ko_body3":"","ko_comment_edit":"","ko_tw1":"","ko_tw2":"","ko_tw3":""}';
 
   var retryCount=0, maxRetry=5;
   function attempt() {
     setLoading(true,'Gemini AI 각색 중'+(retryCount>0?' (재시도 '+retryCount+'/'+maxRetry+')':'')+'...');
     return fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+geminiKey,{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({contents:[{parts:[{text:prompt}]}],safetySettings:[{category:'HARM_CATEGORY_HARASSMENT',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_HATE_SPEECH',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_SEXUALLY_EXPLICIT',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_DANGEROUS_CONTENT',threshold:'BLOCK_NONE'}],generationConfig:{temperature:0.9,maxOutputTokens:8192}})
+      body:JSON.stringify({contents:[{parts:[{text:prompt}]}],safetySettings:[{category:'HARM_CATEGORY_HARASSMENT',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_HATE_SPEECH',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_SEXUALLY_EXPLICIT',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_DANGEROUS_CONTENT',threshold:'BLOCK_NONE'}],generationConfig:{temperature:0.7,maxOutputTokens:8192}})
     }).then(function(r){return r.json();}).then(function(data){
       if(data.error){var msg=data.error.message||'';if((msg.indexOf('demand')!==-1||msg.indexOf('quota')!==-1||msg.indexOf('retry')!==-1)&&retryCount<maxRetry){retryCount++;return new Promise(function(res){setTimeout(function(){res(attempt());},5000);});}throw new Error(msg);}
       var text=(data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts&&data.candidates[0].content.parts[0]&&data.candidates[0].content.parts[0].text)||'';
@@ -377,7 +390,6 @@ function callGemini(article, comments) {
   }
   return attempt();
 }
-
 function callGeminiTranslate(ai) {
   var prompt = '아래 한국어 각색 게시글을 일본어로 번역하세요. 자연스러운 일본 커뮤니티 말투로.\n\n제목: ' + (ai.ko_title_edit||'') + '\n파트1: ' + (ai.ko_body1||'') + '\n파트2: ' + (ai.ko_body2||'') + '\n파트3: ' + (ai.ko_body3||'') + '\n댓글: ' + (ai.ko_comment_edit||'없음') + '\n\nJSON 한 줄로만:\n{"jp_title":"","jp_body1":"","jp_body2":"","jp_body3":"","jp_comment":"","time_jp":"","jp_tw1":"","jp_tw2":"","jp_tw3":""}';
 
