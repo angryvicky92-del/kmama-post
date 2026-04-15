@@ -335,61 +335,55 @@ function callGemini(article, comments) {
   var fullTitle = (article.title||'');
   var fullContent = (article.content||'');
   var fullComment = (best||'');
-
   var viewStr = safeViews ? safeViews + '회' : '';
   var dateStr = '';
   if (article.createTime) { var dt=new Date(article.createTime); dateStr=dt.getFullYear()+'.'+(dt.getMonth()+1)+'.'+dt.getDate(); }
   else if (article.createdAt) { var dt=new Date(article.createdAt); dateStr=dt.getFullYear()+'.'+(dt.getMonth()+1)+'.'+dt.getDate(); }
 
-  var prompt = '아래 한국 육아 커뮤니티 게시글을 처리하세요.\n\n[원본]\n제목: ' + fullTitle + '\n본문: ' + fullContent + '\n댓글: ' + (fullComment||'없음') + '\n\n요구사항:\n1. ko_title_edit: 제목을 X(트위터)에서 클릭하고 싶게 각색 (어그로성)\n2. ko_body_edit: 본문을 X포스트용으로 각색 (500자 이내, 개인정보 제거, 어그로성)\n3. jp_title: 각색된 제목의 일본어 번역\n4. jp_body: 각색된 본문의 일본어 번역\n5. jp_comment: 베스트댓글 일본어 번역\n6. time_jp: 적절한 시간 표현 (例: 14時間前)\n7. ko_tw1/ko_tw2/ko_tw3: 어그로성 한국어 트윗 3개 (해시태그 포함, 140자 이내)\n8. jp_tw1/jp_tw2/jp_tw3: 어그로성 일본어 트윗 3개 (해시태그 포함, 130자 이내)\n\nJSON 한 줄로만 응답(마크다운 없이):\n{"ko_title_edit":"","ko_body_edit":"","jp_title":"","jp_body":"","jp_comment":"","time_jp":"","ko_tw1":"","ko_tw2":"","ko_tw3":"","jp_tw1":"","jp_tw2":"","jp_tw3":""}';
+  // 원본 본문을 문단 기준 최대 3파트로 분할
+  var paras = fullContent.split(/\n\n+/).filter(function(p){return p.trim();});
+  var orig1, orig2, orig3;
+  if (paras.length >= 3) {
+    var t = Math.ceil(paras.length/3);
+    orig1 = paras.slice(0,t).join('\n\n');
+    orig2 = paras.slice(t,t*2).join('\n\n');
+    orig3 = paras.slice(t*2).join('\n\n');
+  } else if (paras.length === 2) {
+    orig1 = paras[0]; orig2 = paras[1]; orig3 = '';
+  } else {
+    var lines = fullContent.split('\n').filter(function(l){return l.trim();});
+    var t = Math.ceil(lines.length/3);
+    orig1 = lines.slice(0,t).join('\n');
+    orig2 = lines.slice(t,t*2).join('\n');
+    orig3 = lines.slice(t*2).join('\n');
+  }
 
-  var retryCount = 0;
-  var maxRetry = 5;
+  var prompt = '아래 한국 육아 커뮤니티 게시글을 처리하세요.\n\n제목: ' + fullTitle + '\n본문: ' + fullContent + '\n베스트댓글: ' + (fullComment||'없음') + '\n\n요구사항:\n- ko_title_edit: 어그로성 각색 제목\n- ko_body1/ko_body2/ko_body3: 본문을 X포스트용으로 각색하여 3파트로 분할 (각 200자 이내, 개인정보 제거)\n- ko_comment_edit: 댓글 각색\n- jp_title: ko_title_edit의 일본어 번역\n- jp_body1/jp_body2/jp_body3: ko_body1/2/3의 일본어 번역 (각 파트 대응)\n- jp_comment: 댓글 일본어 번역\n- time_jp: 시간 표현 (例: 14時間前)\n- ko_tw1/ko_tw2/ko_tw3: 어그로성 한국어 트윗 (해시태그, 140자 이내)\n- jp_tw1/jp_tw2/jp_tw3: 어그로성 일본어 트윗 (해시태그, 130자 이내)\n\nJSON 한 줄로만 응답:\n{"ko_title_edit":"","ko_body1":"","ko_body2":"","ko_body3":"","ko_comment_edit":"","jp_title":"","jp_body1":"","jp_body2":"","jp_body3":"","jp_comment":"","time_jp":"","ko_tw1":"","ko_tw2":"","ko_tw3":"","jp_tw1":"","jp_tw2":"","jp_tw3":""}';
 
+  var retryCount = 0; var maxRetry = 5;
   function attempt() {
-    setLoading(true, 'Gemini AI 처리 중' + (retryCount > 0 ? ' (재시도 ' + retryCount + '/' + maxRetry + ')' : '') + '...');
-    return fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + geminiKey, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+    setLoading(true, 'Gemini AI 처리 중'+(retryCount>0?' (재시도 '+retryCount+'/'+maxRetry+')':'')+'...');
+    return fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+geminiKey, {
+      method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
-        contents: [{parts: [{text: prompt}]}],
-        safetySettings: [
-          {category:'HARM_CATEGORY_HARASSMENT',threshold:'BLOCK_NONE'},
-          {category:'HARM_CATEGORY_HATE_SPEECH',threshold:'BLOCK_NONE'},
-          {category:'HARM_CATEGORY_SEXUALLY_EXPLICIT',threshold:'BLOCK_NONE'},
-          {category:'HARM_CATEGORY_DANGEROUS_CONTENT',threshold:'BLOCK_NONE'}
-        ],
-        generationConfig: {temperature: 0.9, maxOutputTokens: 8192}
+        contents:[{parts:[{text:prompt}]}],
+        safetySettings:[{category:'HARM_CATEGORY_HARASSMENT',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_HATE_SPEECH',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_SEXUALLY_EXPLICIT',threshold:'BLOCK_NONE'},{category:'HARM_CATEGORY_DANGEROUS_CONTENT',threshold:'BLOCK_NONE'}],
+        generationConfig:{temperature:0.9,maxOutputTokens:8192}
       })
-    }).then(function(r) { return r.json(); }).then(function(data) {
-      if (data.error) {
-        var msg = data.error.message || '';
-        if ((msg.indexOf('demand')!==-1||msg.indexOf('quota')!==-1||msg.indexOf('retry')!==-1) && retryCount < maxRetry) {
-          retryCount++;
-          return new Promise(function(res){ setTimeout(function(){ res(attempt()); }, 5000); });
-        }
-        throw new Error(msg);
-      }
-      var text = (data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts&&data.candidates[0].content.parts[0]&&data.candidates[0].content.parts[0].text)||'';
-      if (!text) throw new Error('응답 없음');
-      var m = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'').match(/\{[\s\S]*\}/);
-      if (!m) throw new Error('JSON 없음');
-      var ai = JSON.parse(m[0]);
-      // 원본 필드 추가
-      ai.ko_title_orig = fullTitle;
-      ai.ko_body_orig = fullContent;
-      ai.ko_comment = fullComment;
-      ai.time_ko = dateStr || '';
-      ai.views = viewStr || safeViews;
-      ai.ko_tw1 = ai.ko_tw1 || '';
-      ai.ko_tw2 = ai.ko_tw2 || '';
-      ai.ko_tw3 = ai.ko_tw3 || '';
+    }).then(function(r){return r.json();}).then(function(data){
+      if(data.error){var msg=data.error.message||'';if((msg.indexOf('demand')!==-1||msg.indexOf('quota')!==-1||msg.indexOf('retry')!==-1)&&retryCount<maxRetry){retryCount++;return new Promise(function(res){setTimeout(function(){res(attempt());},5000);});}throw new Error(msg);}
+      var text=(data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts&&data.candidates[0].content.parts[0]&&data.candidates[0].content.parts[0].text)||'';
+      if(!text)throw new Error('응답 없음');
+      var m=text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'').match(/\{[\s\S]*\}/);
+      if(!m)throw new Error('JSON 없음');
+      var ai=JSON.parse(m[0]);
+      // 원본 파트
+      ai.orig1=orig1; ai.orig2=orig2; ai.orig3=orig3;
+      ai.orig_title=fullTitle; ai.orig_comment=fullComment;
+      ai.time_ko=dateStr||''; ai.views=viewStr||safeViews;
       return ai;
-    }).catch(function(e) {
-      if ((e.message.indexOf('demand')!==-1||e.message.indexOf('retry')!==-1) && retryCount < maxRetry) {
-        retryCount++;
-        return new Promise(function(res){ setTimeout(function(){ res(attempt()); }, 5000); });
-      }
+    }).catch(function(e){
+      if((e.message.indexOf('demand')!==-1||e.message.indexOf('retry')!==-1)&&retryCount<maxRetry){retryCount++;return new Promise(function(res){setTimeout(function(){res(attempt());},5000);});}
       throw e;
     });
   }
@@ -399,25 +393,42 @@ function renderAll(article, ai) {
   var views = ai.views || article.viewCount || '';
   var timeKo = ai.time_ko || '';
 
-  // 카드 3장: 원본 / AI각색(한국어) / 일본어 번역
-  document.getElementById('koPreview').innerHTML =
-    mkCard('orig', ai.ko_title_orig, timeKo, views, true, ai.ko_body_orig, ai.ko_comment, '원본') +
-    mkCard('ko', ai.ko_title_edit, '', '', false, ai.ko_body_edit, '', 'AI 각색') +
-    mkCard('jp', ai.jp_title, ai.time_jp, views, false, ai.jp_body, ai.jp_comment, '일본어');
+  // 원본 카드 (최대 3장)
+  var origCards = '';
+  origCards += mkCard('orig', ai.orig_title, timeKo, views, true, ai.orig1, '', '원본 1');
+  if (ai.orig2) origCards += mkCard('orig', '', '', '', false, ai.orig2, '', '원본 2');
+  if (ai.orig3) origCards += mkCard('orig', '', '', '', false, ai.orig3, ai.orig_comment, '원본 3');
 
-  // 다운로드용 (숨김)
-  document.getElementById('koCardsEl').innerHTML =
-    mkRaw('orig', ai.ko_title_orig, timeKo, views, true, ai.ko_body_orig, ai.ko_comment) +
-    mkRaw('ko', ai.ko_title_edit, '', '', false, ai.ko_body_edit, '') +
-    mkRaw('jp', ai.jp_title, ai.time_jp, views, false, ai.jp_body, ai.jp_comment);
+  // 각색 카드 (최대 3장)
+  var editCards = '';
+  editCards += mkCard('ko', ai.ko_title_edit, timeKo, views, true, ai.ko_body1, '', '각색 1');
+  if (ai.ko_body2) editCards += mkCard('ko', '', '', '', false, ai.ko_body2, '', '각색 2');
+  if (ai.ko_body3) editCards += mkCard('ko', '', '', '', false, ai.ko_body3, ai.ko_comment_edit, '각색 3');
+
+  // 일본어 번역 카드 (최대 3장) - 다운로드용
+  var jpCards = '';
+  jpCards += mkCard('jp', ai.jp_title, ai.time_jp, views, true, ai.jp_body1, '', '번역 1');
+  if (ai.jp_body2) jpCards += mkCard('jp', '', '', '', false, ai.jp_body2, '', '번역 2');
+  if (ai.jp_body3) jpCards += mkCard('jp', '', '', '', false, ai.jp_body3, ai.jp_comment, '번역 3');
+
+  // 미리보기 - 3섹션 표시
+  document.getElementById('koPreview').innerHTML =
+    '<div style="margin-bottom:8px;font-size:11px;color:var(--text3);font-family:Space Mono,monospace">── 원본 ──</div>' + origCards +
+    '<div style="margin:16px 0 8px;font-size:11px;color:var(--text3);font-family:Space Mono,monospace">── AI 각색 ──</div>' + editCards +
+    '<div style="margin:16px 0 8px;font-size:11px;color:var(--text3);font-family:Space Mono,monospace">── 일본어 번역 ──</div>' + jpCards;
+  document.getElementById('jpPreview').innerHTML = '';
+
+  // 다운로드용 - 일본어 번역 카드만
+  document.getElementById('jpCardsEl').innerHTML = jpCards;
+  document.getElementById('koCardsEl').innerHTML = '';
 
   // 트윗
-  var styles = ['공감형','충격형','질문형'];
-  var koT = [ai.ko_tw1, ai.ko_tw2, ai.ko_tw3];
-  var jpT = [ai.jp_tw1, ai.jp_tw2, ai.jp_tw3];
-  document.getElementById('tweetsGrid').innerHTML =
-    '<div class="tweet-box"><div class="tweet-box-title">🇰🇷 한국어</div>' + koT.map(function(t,i){ return twH(t, styles[i]); }).join('') + '</div>' +
-    '<div class="tweet-box"><div class="tweet-box-title">🇯🇵 일본어</div>' + jpT.map(function(t,i){ return twH(t, styles[i]); }).join('') + '</div>';
+  var styles=['공감형','충격형','질문형'];
+  var koT=[ai.ko_tw1,ai.ko_tw2,ai.ko_tw3];
+  var jpT=[ai.jp_tw1,ai.jp_tw2,ai.jp_tw3];
+  document.getElementById('tweetsGrid').innerHTML=
+    '<div class="tweet-box"><div class="tweet-box-title">🇰🇷 한국어</div>'+koT.map(function(t,i){return twH(t,styles[i]);}).join('')+'</div>'+
+    '<div class="tweet-box"><div class="tweet-box-title">🇯🇵 일본어</div>'+jpT.map(function(t,i){return twH(t,styles[i]);}).join('')+'</div>';
 }
 function mkCard(lang, title, time, views, showMeta, body, comment, label) {
   var jp = lang === 'jp';
@@ -476,35 +487,23 @@ function copyT(btn) {
 
 function downloadCards(lang) {
   document.getElementById('dlStatus').textContent = '이미지 생성 중...';
-  var cards = document.getElementById('jpCardsEl').querySelectorAll('.card-wrap > div:last-child');
-  if (!cards || cards.length === 0) {
-    // jpCardsEl이 비어있으면 koCardsEl의 일본어 카드(3번째) 사용
-    var allCards = document.getElementById('koCardsEl').children;
-    cards = [allCards[2]]; // 3번째 카드(일본어)만
-  }
-  // 카드가 없으면 koCardsEl 전체 카드 각각
-  var el = document.getElementById('koCardsEl');
+  var el = document.getElementById('jpCardsEl');
   var cardWraps = el.querySelectorAll('.card-wrap');
   if (cardWraps.length === 0) { document.getElementById('dlStatus').textContent = '카드 없음 - 먼저 분석을 실행하세요'; return; }
-
   var idx = 0;
-  function downloadNext() {
+  function next() {
     if (idx >= cardWraps.length) { document.getElementById('dlStatus').textContent = '✓ ' + cardWraps.length + '장 다운로드 완료!'; return; }
-    var card = cardWraps[idx];
-    var num = idx + 1;
-    idx++;
+    var card = cardWraps[idx]; var num = idx+1; idx++;
     document.getElementById('dlStatus').textContent = num + '번 카드 생성 중...';
-    html2canvas(card, { scale: 2, backgroundColor: '#fff', useCORS: true, logging: false }).then(function(canvas) {
+    html2canvas(card, {scale:2, backgroundColor:'#fff', useCORS:true, logging:false}).then(function(canvas){
       var a = document.createElement('a');
       a.download = num + '.png';
       a.href = canvas.toDataURL('image/png');
       a.click();
-      setTimeout(downloadNext, 800);
-    }).catch(function(e) {
-      document.getElementById('dlStatus').textContent = '❌ ' + e.message;
-    });
+      setTimeout(next, 800);
+    }).catch(function(e){ document.getElementById('dlStatus').textContent = '❌ '+e.message; });
   }
-  downloadNext();
+  next();
 }
 function esc(s) {
   if (!s) return '';
