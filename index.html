@@ -402,7 +402,7 @@ function renderAll(article, ai) {
   if (ai.ko_body3) editCards += mkCard('ko', '', '', '', false, ai.ko_body3, ai.ko_comment_edit, '각색 3');
 
   // 일본어 카드들
-  var jpCards = mkCard('jp', ai.jp_title, ai.time_jp, views, true, ai.jp_body1, '', '번역 1');
+  var jpCards = mkCard('jp', ai.jp_title, ai.time_jp || timeKo, views, true, ai.jp_body1, '', '번역 1');
   if (ai.jp_body2) jpCards += mkCard('jp', '', '', '', false, ai.jp_body2, '', '번역 2');
   if (ai.jp_body3) jpCards += mkCard('jp', '', '', '', false, ai.jp_body3, ai.jp_comment, '번역 3');
 
